@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    build: ./gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGO_URL=mongodb://mongodb:27017/whatsapp
+#    depends_on:
+#      - auth-service
+#      - user-service
+#      - chat-service
+#      - message-service
+#      - presence-service
+#      - mongodb
+
+  mongodb:
+    image: mongo:6.0
+    restart: always
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_data:/data/db
+
+#  # These will be your microservices — define them similarly
+#  auth-service:
+#    build: ./services/auth-service
+#    ports:
+#      - "3001:3000"
+#
+#  user-service:
+#    build: ./services/user-service
+#    ports:
+#      - "3002:3000"
+#
+#  chat-service:
+#    build: ./services/chat-service
+#    ports:
+#      - "3003:3000"
+#
+#  message-service:
+#    build: ./services/message-service
+#    ports:
+#      - "3004:3000"
+#
+#  presence-service:
+#    build: ./services/presence-service
+#    ports:
+#      - "3005:3000"
+
+volumes:
+  mongo_data:
