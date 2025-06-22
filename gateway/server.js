@@ -1,5 +1,6 @@
 const express = require('express');
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const cors = require('cors');
+const proxy = require("express-http-proxy")
 
 
 const app  = express();
@@ -9,15 +10,15 @@ app.get('/some', (req, res) => {
     res.json({name: 'Gateway Server', someText: 'Gateway Server'});
 });
 
+app.use(cors());
+app.use(express.json());
+
 app.use((req, res, next) => {
     console.log(`[Gateway] ${req.method} ${req.url}`);
 })
 
 // Proxy for authentication server
-// app.use('/auth', createProxyMiddleware({
-//     target: 'http://auth-service:3001',
-//     changeOrigin: true
-// }));
+app.use('/auth', proxy('http://localhost:3001'));
 
 // // Proxy to User Service
 // app.use('/users', createProxyMiddleware({
