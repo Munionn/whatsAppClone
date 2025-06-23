@@ -6,7 +6,7 @@ const proxy = require("express-http-proxy")
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-app.get('/some', (req, res) => {
+app.get('/', (req, res) => {
     res.json({name: 'Gateway Server', someText: 'Gateway Server'});
 });
 
