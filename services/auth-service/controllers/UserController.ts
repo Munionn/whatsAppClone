@@ -1,43 +1,81 @@
 import { Request, Response, NextFunction } from "express";
+import userService from "../service/UserService";
 
-export default class UserController {
+class UserController {
+
     async register(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            res.json({ message: "Register" });
+            const { phoneNumber, password } = req.body;
+            const result = await userService.register(phoneNumber, password);
+            res.status(200).send(result);
         } catch (error) {
-            console.log(error);
+            next(error);
         }
     }
 
     async login(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            res.json({ message: "Login" });
+            const { phoneNumber, password } = req.body;
+            const result = await userService.login(phoneNumber, password);
+            res.status(200).send(result);
         } catch (error) {
             console.log(error);
+            next(error);
         }
     }
 
     async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            res.json({ message: "Logout" });
+            const token = req.cookies?.refreshToken || req.headers['x-refresh-token'];
+            if (!token) {
+                return next(new Error('No token provided'));
+
+            }
+            await userService.logout(token);
+            res.status(200).send();
         } catch (error) {
             console.log(error);
+            next(error);
         }
     }
 
     async refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            res.json({ message: "Refresh Token" });
+            const token = req.cookies?.refreshToken || req.headers['x-refresh-token'];
+            if (!token) {
+                return next(new Error('No token provided'));
+            }
+            const result = await userService.refresh(token);
+            res.json(result);
         } catch (error) {
             console.log(error);
+            next(error);
         }
     }
 
     async getUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            res.json(['sometext', 'another']);
+            const users = await userService.getAllUsers();
+            res.status(200).send(users);
         } catch (error) {
             console.log(error);
         }
     }
+
+    // think about logic that update user status
+    async updateUserStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try{
+
+            const {userId,  status } = req.body;
+            const updateUser = await userService.updateStatus(userId, status)
+            res.json(updateUser);
+
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
+    }
 }
+
+export default new UserController();

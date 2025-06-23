@@ -2,6 +2,7 @@ import jwt,{SignOptions, JwtPayload } from 'jsonwebtoken';
 import {TokenPayload} from "../types/tokenTypes";
 import * as process from "node:process";
 import tokenModel from "../models/tokenModel";
+import { isValidPaiload } from "../utils/TokenUtils";
 
 class TokenService {
     generateTokens(payLoad: TokenPayload) {
@@ -13,18 +14,26 @@ class TokenService {
         })
         return { accessToken, refreshToken }
     }
-    validateAccessToken(token: string): TokenPayload | null{
-        try{
-            const accessToken =  jwt.verify(token, process.env.JWT_ACCESS_SECRET as string);
-            return accessToken;
-        }catch(err){
+
+    validateAccessToken(token: string): TokenPayload | null {
+        try {
+            const decade = jwt.verify(token, process.env.JWT_ACCESS_SECRET as string);
+            if(isValidPaiload(decade)) {
+                return decade;
+            }
+            return null;
+        } catch (err) {
             return null;
         }
     }
-    validateRefreshToken(token: string){
+
+    validateRefreshToken(token: string): TokenPayload | null {
         try{
-            const accessToken =  jwt.verify(token, process.env.JWT_REFRESH_SECRET as string);
-            return accessToken;
+            const decade =  jwt.verify(token, process.env.JWT_REFRESH_SECRET as string);
+            if(isValidPaiload(decade)) {
+                return decade;
+            }
+            return null;
         }catch(err){
             return null;
         }

@@ -2,14 +2,16 @@ import UserModel from "../models/UserModel";
 import bcrypt from "bcrypt";
 import UserDto from "../dtos/UserDto";
 import tokenService from "./TokenService";
+import {TokenPayload} from "../types/tokenTypes";
+import userModel from "../models/UserModel";
 
 
 
 class UserService {
     async register(phone: string, password: string) {
         const userModel = await UserModel.findOne({ phone });
-        if (!userModel) {
-            throw new Error('User does not exist');
+        if (userModel) {
+            throw new Error('User does already  exist');
         }
         const hashedPassword = await bcrypt.hash(password, 12);
         const user = await UserModel.create({phone, password: hashedPassword });
@@ -25,9 +27,9 @@ class UserService {
         if (!user) {
             throw new Error('User does not exist');
         }
-        const isPassword = bcrypt.compare(password, user.password)
+        const isPassword = await bcrypt.compare(password, user.password);
         if (!isPassword) {
-            throw new Error('User does not exist');
+            throw new Error('Invalid password');
         }
         const userDto = new UserDto(user);
         const tokens = tokenService.generateTokens({...userDto});
@@ -51,8 +53,29 @@ class UserService {
             throw new Error('Refresh token not set');
         }
 
-        const userData = UserService.findById(userData.id);
+        const user = await UserModel.findById(userData?.id);
+        const userDto = new UserDto(user);
+        const tokens = tokenService.generateTokens({...userDto});
+        await tokenService.saveToken(userDto.id, tokens.refreshToken);
+        return {...tokens, user: userDto};
+    }
+
+    async getAllUsers(): Promise<UserDto[]> {
+        const users = await UserModel.find();
+        return users.map((user) => new UserDto(user));
+    }
+    async updateStatus(userId: number, status: 'online' | 'offline'){
+        const user = await userModel.findByIdAndUpdate(userId, {
+            status,
+            lastSeen: status === 'offline' ?  new  Date() : undefined,
+            },
+            {new: true}
+        );
+        if (!user) {
+            throw new Error('User does not exist');
+        }
+        return new UserDto(user);
     }
 }
 
-module.exports = new UserService();
+export default new UserService();
