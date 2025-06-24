@@ -5,8 +5,8 @@ class UserController {
 
     async register(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const { phoneNumber, password } = req.body;
-            const result = await userService.register(phoneNumber, password);
+            const { phoneNumber, password, name } = req.body;
+            const result = await userService.register(phoneNumber, password, name);
             res.status(200).send(result);
         } catch (error) {
             next(error);

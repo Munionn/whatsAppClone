@@ -1,17 +1,6 @@
 version: '3.8'
 
 services:
-  api-gateway:
-    build: ./gateway
-    ports:
-      - "3000:3000"
-    environment:
-      - MONGO_URL=mongodb://mongodb:27017/whatsapp
-    depends_on:
-      - mongodb
-  #      mongodb:
-  #        condition: service_healthy
-
   mongodb:
     image: mongo:6.0
     restart: always
@@ -19,23 +8,37 @@ services:
       - "27018:27017"
     volumes:
       - mongo_data:/data/db
-#    healthcheck:
-#      test: ["CMD-SHELL", "mongosh --eval 'db.runCommand({ ping: 1 })' --quiet"]
-#      interval: 10s
-#      timeout: 10s
-#      retries: 10
+    # Uncomment to enable healthcheck
+    # healthcheck:
+    #   test: ["CMD-SHELL", "mongosh --eval 'db.runCommand({ ping: 1 })' --quiet"]
+    #   interval: 10s
+    #   timeout: 10s
+    #   retries: 10
 
   auth-service:
     build: ./services/auth-service
     ports:
       - "3001:3001"
     environment:
-      - MONGO_URL=mongodb://mongodb:27017/whatsapp
+      - DB_URL=mongodb://mongodb:27017/whatsapp
+      - JWT_SECRET=your_super_secret_key
     depends_on:
       - mongodb
-      - api-gateway
-#      mongodb:
-#        condition: service_healthy
+    # Uncomment to enable healthcheck
+    # healthcheck:
+    #   test: ["CMD-SHELL", "curl -f http://localhost:3001/ || exit 1"]
+    #   interval: 10s
+    #   timeout: 10s
+    #   retries: 10
+
+  api-gateway:
+    build: ./gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_URL=mongodb://mongodb:27017/whatsapp
+    depends_on:
+      - mongodb
 
 volumes:
   mongo_data:

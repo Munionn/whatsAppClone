@@ -8,13 +8,13 @@ import userModel from "../models/UserModel";
 
 
 class UserService {
-    async register(phone: string, password: string) {
+    async register(phone: string, password: string, name: string) {
         const userModel = await UserModel.findOne({ phone });
         if (userModel) {
             throw new Error('User does already  exist');
         }
         const hashedPassword = await bcrypt.hash(password, 12);
-        const user = await UserModel.create({phone, password: hashedPassword });
+        const user = await UserModel.create({phone, password: hashedPassword, name });
 
         const userDto = new UserDto(user);
         const tokens = tokenService.generateTokens({...userDto});
@@ -48,12 +48,18 @@ class UserService {
             throw new Error('Refresh token not set');
         }
         const userData = tokenService.validateRefreshToken(refreshToken);
+        if (!userData) {
+            throw new Error('Invalid refresh token');
+        }
         const tokensFromDb =  await tokenService.findToken(refreshToken);
         if (!tokensFromDb) {
             throw new Error('Refresh token not set');
         }
 
-        const user = await UserModel.findById(userData?.id);
+        const user = await UserModel.findById(userData.id);
+        if (!user) {
+            throw new Error('User does not exist');
+        }
         const userDto = new UserDto(user);
         const tokens = tokenService.generateTokens({...userDto});
         await tokenService.saveToken(userDto.id, tokens.refreshToken);

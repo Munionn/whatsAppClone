@@ -29,7 +29,7 @@ class TokenService {
 
     validateRefreshToken(token: string): TokenPayload | null {
         try{
-            const decade =  jwt.verify(token, process.env.JWT_REFRESH_SECRET as string);
+            const decade =  jwt.verify(token, process.env.JWT_SECRET as string);
             if(isValidPaiload(decade)) {
                 return decade;
             }

@@ -1,24 +1,36 @@
 const express = require('express');
 const cors = require('cors');
-const proxy = require("express-http-proxy")
+const proxy = require('express-http-proxy');
 
-
-const app  = express();
+const app = express();
 const PORT = process.env.PORT || 3000;
-
-app.get('/', (req, res) => {
-    res.json({name: 'Gateway Server', someText: 'Gateway Server'});
-});
 
 app.use(cors());
 app.use(express.json());
 
+app.get('/', (req, res) => {
+    res.json({ name: 'Gateway Server', someText: 'Gateway Server' });
+});
+
 app.use((req, res, next) => {
     console.log(`[Gateway] ${req.method} ${req.url}`);
-})
+    next();
+});
 
 // Proxy for authentication server
-app.use('/auth', proxy('http://localhost:3001'));
+app.use('/auth', proxy('http://auth-service:3001', {
+    proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
+        proxyReqOpts.headers['Content-Type'] = 'application/json';
+        return proxyReqOpts;
+    },
+    proxyReqBodyDecorator: (bodyContent, srcReq) => {
+        return bodyContent;
+    },
+    userResDecorator: async (proxyRes, proxyResData, userReq, userRes) => {
+        // Optionally log or modify the response here
+        return proxyResData;
+    }
+}));
 
 // // Proxy to User Service
 // app.use('/users', createProxyMiddleware({
@@ -44,8 +56,6 @@ app.use('/auth', proxy('http://localhost:3001'));
 //     changeOrigin: true
 // }));
 
-
-
 app.listen(PORT, () => {
     console.log(`Server started on port ${PORT}`);
-})
+});
