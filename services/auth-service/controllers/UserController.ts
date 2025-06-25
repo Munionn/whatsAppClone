@@ -7,7 +7,7 @@ class UserController {
         try {
             const { phoneNumber, password, name } = req.body;
             const result = await userService.register(phoneNumber, password, name);
-            res.status(200).send(result);
+            res.cookie('refreshToken', result.refreshToken, {httpOnly: true});
         } catch (error) {
             next(error);
         }
