@@ -40,7 +40,4 @@ const UserSchema = new Schema({
     },
 })
 
-UserSchema.index({ phone: 1 })
-UserSchema.index({ email: 1 })
-
 export default model("User", UserSchema);

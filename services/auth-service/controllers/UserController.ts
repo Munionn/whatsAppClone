@@ -5,8 +5,8 @@ class UserController {
 
     async register(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const { phoneNumber, password, name } = req.body;
-            const result = await userService.register(phoneNumber, password, name);
+            const { phone, password, name } = req.body;
+            const result = await userService.register(phone, password, name);
             res.cookie('refreshToken', result.refreshToken, {httpOnly: true});
         } catch (error) {
             next(error);

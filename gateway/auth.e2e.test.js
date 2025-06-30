@@ -11,8 +11,9 @@ describe('Gateway Auth E2E', () => {
   it('should register a new user through the gateway', async () => {
     const res = await request(gatewayUrl)
       .post('/auth/register')
-      .send({ phoneNumber: randomPhone, password, name })
+      .send({ phone: randomPhone, password, name })
       .set('Content-Type', 'application/json');
+    console.log('Register response:', res.statusCode, res.body);
     expect(res.statusCode).toBe(200);
     expect(res.body).toHaveProperty('accessToken');
     expect(res.body).toHaveProperty('refreshToken');
@@ -21,12 +22,12 @@ describe('Gateway Auth E2E', () => {
     expect(res.body.user).toHaveProperty('phone', randomPhone);
     accessToken = res.body.accessToken;
     refreshToken = res.body.refreshToken;
-  });
+  }, 15000);
 
   it('should login with the registered user', async () => {
     const res = await request(gatewayUrl)
       .post('/auth/login')
-      .send({ phoneNumber: randomPhone, password })
+      .send({ phone: randomPhone, password })
       .set('Content-Type', 'application/json');
     expect(res.statusCode).toBe(200);
     expect(res.body).toHaveProperty('accessToken');

@@ -1,0 +1,9 @@
+
+// @ts-ignore
+export  enum typeError {
+    NO_NAME = 'NO_NAME',
+    NO_PHONE_NUMBER = 'NO_PHONE_NUMBER',
+    WRONG_PHONE_NUMBER = 'WRONG_PHONE_NUMBER',
+    INVALID_PASSWORD = 'INVALID_PASSWORD',
+    NO_PASSWORD = 'NO_PASSWORD',
+}

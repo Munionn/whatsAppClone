@@ -6,10 +6,24 @@ import Typography from "@mui/material/Typography";
 import Paper from "@mui/material/Paper";
 import Link from '@mui/material/Link';
 import { Link as RouterLink } from 'react-router-dom';
+import api from "../service/api";
+import { useNavigate} from "react-router-dom";
 
 const LoginForm = () => {
     const [phoneNumber, setPhoneNumber] = useState<string>("");
     const [password, setPassword] = useState<string>("");
+    const navigate = useNavigate();
+    const onSubmitLogin = () => {
+        api.post('/auth/login', {
+            phoneNumber,
+            password
+        }).then((res) => {
+            console.log(res)
+        }).catch((err) => {
+            console.log(err)
+        });
+        navigate("/");
+    }
 
     return (
         <Box
@@ -50,7 +64,10 @@ const LoginForm = () => {
                     variant="outlined"
                     fullWidth
                     value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    onChange={(e) => {
+                        setPhoneNumber(e.target.value)
+                        console.log(e.target.value)
+                    }}
                     placeholder="Enter your phone number"
                 />
                 <TextField
@@ -69,6 +86,7 @@ const LoginForm = () => {
                     size="large"
                     fullWidth
                     sx={{ fontWeight: 600 }}
+                    onClick={onSubmitLogin}
                 >
                     Login
                 </Button>

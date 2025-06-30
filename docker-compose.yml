@@ -24,6 +24,7 @@ services:
       - JWT_SECRET=your_super_secret_key
     depends_on:
       - mongodb
+      - api-gateway
     # Uncomment to enable healthcheck
     # healthcheck:
     #   test: ["CMD-SHELL", "curl -f http://localhost:3001/ || exit 1"]
@@ -35,8 +36,7 @@ services:
     build: ./gateway
     ports:
       - "3000:3000"
-    environment:
-      - DB_URL=mongodb://mongodb:27017/whatsapp
+   
     depends_on:
       - mongodb
 
