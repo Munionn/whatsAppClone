@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import UserController from "../controllers/UserController";
-
+import authMiddleware from "../middleware/authMiddleware";
 const router = Router();
 
 
@@ -20,7 +20,7 @@ router.get('/refresh', (req: Request, res: Response, next: NextFunction) => {
     UserController.refresh(req, res, next);
 });
 
-router.get('/users', (req: Request, res: Response, next: NextFunction) => {
+router.get('/users', authMiddleware,(req: Request, res: Response, next: NextFunction) => {
     UserController.getUsers(req, res, next);
 });
 

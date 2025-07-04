@@ -7,6 +7,7 @@ import Paper from "@mui/material/Paper";
 import api from "../service/api";
 import {typeError} from "../models/IError.ts";
 import {useNavigate} from "react-router-dom";
+import { authStore } from "../store/authStore";
 
 const RegisterForm = () => {
     const navigate = useNavigate();
@@ -50,8 +51,13 @@ const RegisterForm = () => {
             name: name,
             phone: phone,
             password: password,
-        }).then(() => {
-
+        }).then((res) => {
+            const data = res.data as any;
+            localStorage.setItem('token', data.accessToken);
+            if (data.user) {
+                localStorage.setItem('user', JSON.stringify(data.user));
+                authStore.setUser(data.user);
+            }
         }).catch((err) => {
             console.log(err);
         });

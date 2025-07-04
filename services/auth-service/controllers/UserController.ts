@@ -7,7 +7,9 @@ class UserController {
         try {
             const { phone, password, name } = req.body;
             const result = await userService.register(phone, password, name);
-            res.cookie('refreshToken', result.refreshToken, {httpOnly: true});
+            res.cookie('refreshToken', result.refreshToken, { httpOnly: true, sameSite: 'lax' });
+            res.header('access-token', result.accessToken);
+            res.status(200).json(result);
         } catch (error) {
             next(error);
         }
@@ -17,7 +19,9 @@ class UserController {
         try {
             const { phoneNumber, password } = req.body;
             const result = await userService.login(phoneNumber, password);
-            res.status(200).send(result);
+            res.cookie('refreshToken', result.refreshToken, { httpOnly: true, sameSite: 'lax' });
+            res.header('access-token', result.accessToken);
+            res.status(200).json(result);
         } catch (error) {
             console.log(error);
             next(error);

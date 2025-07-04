@@ -1,5 +1,4 @@
 
-// @ts-ignore
 export  enum typeError {
     NO_NAME = 'NO_NAME',
     NO_PHONE_NUMBER = 'NO_PHONE_NUMBER',

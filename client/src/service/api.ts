@@ -1,38 +1,53 @@
-import axios from "axios";
+import axios from 'axios';
 
-const API_URL = 'http://localhost:3000';
+export const API_URL = 'http://localhost:3000';
 
-const api  = axios.create({
-  baseURL: API_URL,
-  headers:{
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true
-})
+const api = axios.create({
+    baseURL: API_URL,
+    withCredentials: true,
+});
 
+// REQUEST INTERCEPTOR
 api.interceptors.request.use(
-  (config) => {
-    // Example: Attach token from localStorage
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers = config.headers || {};
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token && config.headers) {
+            config.headers['Authorization'] = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
 );
 
-// Add a response interceptor
+// RESPONSE INTERCEPTOR
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // Example: Handle 401 errors globally
-    if (error.response && error.response.status === 401) {
-      // Redirect to login or refresh token
+    (response) => response,
+    async (error) => {
+        const originalRequest = error.config;
+        if (
+            error.response &&
+            error.response.status === 401 &&
+            !originalRequest._isRetry
+        ) {
+            originalRequest._isRetry = true;
+            try {
+                const refreshResponse = await axios.get(
+                    `${API_URL}/auth/refresh`,
+                    { withCredentials: true }
+                );
+                localStorage.setItem('token', refreshResponse.data.accessToken);
+                if (originalRequest.headers) {
+                    originalRequest.headers['Authorization'] = `Bearer ${refreshResponse.data.accessToken}`;
+                }
+                return api.request(originalRequest);
+            } catch (refreshError) {
+                localStorage.removeItem('token');
+                // Здесь можно добавить редирект на /login или другую логику выхода
+                console.log('NOT AUTHORIZED');
+            }
+        }
+        return Promise.reject(error);
     }
-    return Promise.reject(error);
-  }
 );
 
-export default api; 
+export default api;

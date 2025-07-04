@@ -5,6 +5,7 @@ const proxy = require('express-http-proxy');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// CORS setup for frontend
 app.use(cors({
     origin: 'http://localhost:5173',
     credentials: true,
@@ -24,13 +25,21 @@ app.use((req, res, next) => {
 app.use('/auth', proxy('http://auth-service:3001', {
     proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
         proxyReqOpts.headers['Content-Type'] = 'application/json';
+        // Forward cookies from the client to the auth service
+        if (srcReq.headers.cookie) {
+            proxyReqOpts.headers['cookie'] = srcReq.headers.cookie;
+        }
         return proxyReqOpts;
     },
     proxyReqBodyDecorator: (bodyContent, srcReq) => {
         return bodyContent;
     },
     userResDecorator: async (proxyRes, proxyResData, userReq, userRes) => {
-        // Optionally log or modify the response here
+        // Forward Set-Cookie headers from the auth service to the client
+        const setCookie = proxyRes.headers['set-cookie'];
+        if (setCookie) {
+            userRes.setHeader('set-cookie', setCookie);
+        }
         return proxyResData;
     }
 }));

@@ -1,29 +1,59 @@
-import { useState } from "react";
+import {useState} from "react";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Paper from "@mui/material/Paper";
 import Link from '@mui/material/Link';
-import { Link as RouterLink } from 'react-router-dom';
+import {Link as RouterLink} from 'react-router-dom';
 import api from "../service/api";
-import { useNavigate} from "react-router-dom";
-
+import {useNavigate} from "react-router-dom";
+import {authStore} from "../store/authStore";
+import {parseHtmlError} from "../utils/error.utils.ts";
 const LoginForm = () => {
     const [phoneNumber, setPhoneNumber] = useState<string>("");
     const [password, setPassword] = useState<string>("");
+    const [error, setError] = useState<string | null>("");
     const navigate = useNavigate();
-    const onSubmitLogin = () => {
-        api.post('/auth/login', {
-            phoneNumber,
-            password
-        }).then((res) => {
-            console.log(res)
-        }).catch((err) => {
-            console.log(err)
-        });
-        navigate("/");
-    }
+    const onSubmitLogin = async () => {
+        setError(null); // Clear previous error
+
+        try {
+            const res = await api.post('/auth/login', {
+                phoneNumber,
+                password
+            });
+
+            const data = res.data;
+
+            localStorage.setItem('token', data.accessToken);
+
+            if (data.user) {
+                localStorage.setItem('user', JSON.stringify(data.user));
+                authStore.setUser(data.user);
+            }
+
+            navigate("/");
+        } catch (err: any) {
+            let errorMessage = 'An unknown error occurred';
+
+            if (err.response) {
+                if (typeof err.response.data === 'string' && err.response.data.includes('<pre')) {
+                    errorMessage = parseHtmlError(err.response.data);
+                } else if (err.response.data?.message) {
+                    errorMessage = err.response.data.message;
+                } else {
+                    errorMessage = `Server responded with ${err.response.status}`;
+                }
+            } else if (err.request) {
+                errorMessage = 'No response from server';
+            } else {
+                errorMessage = err.message || 'Unexpected error';
+            }
+
+            setError(errorMessage);
+        }
+    };
 
     return (
         <Box
@@ -85,14 +115,19 @@ const LoginForm = () => {
                     color="primary"
                     size="large"
                     fullWidth
-                    sx={{ fontWeight: 600 }}
+                    sx={{fontWeight: 600}}
                     onClick={onSubmitLogin}
                 >
                     Login
                 </Button>
-                <Link component={RouterLink} to="/register" underline="hover" sx={{ mt: 2, textAlign: 'center' }}>
+                <Link component={RouterLink} to="/register" underline="hover" sx={{mt: 2, textAlign: 'center'}}>
                     Don't have an account? Register
                 </Link>
+                {error && (
+                    <Typography color="error" align="center" sx={{mb: 2}}>
+                        check your data that you input
+                    </Typography>
+                )}
             </Paper>
         </Box>
     );
