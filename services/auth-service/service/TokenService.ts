@@ -3,13 +3,15 @@ import {TokenPayload} from "../types/tokenTypes";
 import * as process from "node:process";
 import tokenModel from "../models/tokenModel";
 import { isValidPaiload } from "../utils/TokenUtils";
+import { v4 as uuidv4 } from 'uuid';
 
 class TokenService {
     generateTokens(payLoad: TokenPayload) {
         const accessToken =  jwt.sign(payLoad, process.env.JWT_SECRET as string, {
             expiresIn: '1h'
         })
-        const refreshToken =  jwt.sign(payLoad, process.env.JWT_SECRET as string, {
+        const refreshPayload = { ...payLoad, session: uuidv4() };
+        const refreshToken =  jwt.sign(refreshPayload, process.env.JWT_SECRET as string, {
             expiresIn: '3h'
         })
         return { accessToken, refreshToken }

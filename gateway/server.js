@@ -1,73 +1,49 @@
 const express = require('express');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 const cors = require('cors');
-const proxy = require('express-http-proxy');
+require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// CORS setup for frontend
+// Proxy for WebSocket (must be FIRST)
+app.use(
+    '/socket.io',
+    createProxyMiddleware({
+        target: 'http://main-service:3002',
+        ws: true,
+        changeOrigin: true,
+        logLevel: 'debug'
+    })
+);
+
+// Proxy for Auth Service (must be before body parsers)
+app.use('/auth', require('express-http-proxy')('http://auth-service:3001'));
+
+// Now add other middleware
+app.use(express.json());
 app.use(cors({
     origin: 'http://localhost:5173',
     credentials: true,
 }));
-app.use(express.json());
 
-app.get('/', (req, res) => {
-    res.json({ name: 'Gateway Server', someText: 'Gateway Server' });
-});
+// Target service URLs from environment or default to Docker service names
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:3001';
+const MAIN_SERVICE_URL = process.env.MAIN_SERVICE_URL || 'http://main-service:3002';
 
-app.use((req, res, next) => {
-    console.log(`[Gateway] ${req.method} ${req.url}`);
-    next();
-});
-
-// Proxy for authentication server
-app.use('/auth', proxy('http://auth-service:3001', {
-    proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
-        proxyReqOpts.headers['Content-Type'] = 'application/json';
-        // Forward cookies from the client to the auth service
-        if (srcReq.headers.cookie) {
-            proxyReqOpts.headers['cookie'] = srcReq.headers.cookie;
-        }
-        return proxyReqOpts;
-    },
-    proxyReqBodyDecorator: (bodyContent, srcReq) => {
-        return bodyContent;
-    },
-    userResDecorator: async (proxyRes, proxyResData, userReq, userRes) => {
-        // Forward Set-Cookie headers from the auth service to the client
-        const setCookie = proxyRes.headers['set-cookie'];
-        if (setCookie) {
-            userRes.setHeader('set-cookie', setCookie);
-        }
-        return proxyResData;
-    }
+// 📦 Main Service Proxy (REST + socket.io fallback)
+app.use('/main', createProxyMiddleware({
+    target: MAIN_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: { '^/main': '' },
 }));
 
-// // Proxy to User Service
-// app.use('/users', createProxyMiddleware({
-//     target: 'http://user-service:4002',
-//     changeOrigin: true
-// }));
+// Default route
+app.get('/', (req, res) => {
+    res.json({ message: 'Gateway Server is running.' });
+});
 
-// // Proxy to Chat Service
-// app.use('/chats', createProxyMiddleware({
-//     target: 'http://chat-service:4003',
-//     changeOrigin: true
-// }));
-
-// // Proxy to Message Service
-// app.use('/messages', createProxyMiddleware({
-//     target: 'http://message-service:4004',
-//     changeOrigin: true
-// }));
-
-// // Proxy to Presence Service (WebSocket)
-// app.use('/presence', createProxyMiddleware({
-//     target: 'http://presence-service:4005',
-//     changeOrigin: true
-// }));
-
+// Start server
 app.listen(PORT, () => {
-    console.log(`Server started on port ${PORT}`);
+    console.log(`🚀 Gateway server is running on port ${PORT}`);
 });

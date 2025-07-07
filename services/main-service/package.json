@@ -1,0 +1,47 @@
+{
+  "name": "main-service",
+  "version": "1.0.0",
+  "description": "Main service for WhatsApp clone - handles chat, messages, and real-time features",
+  "main": "index.ts",
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "nodemon index.ts",
+    "build": "tsc",
+    "test": "jest"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.21.2",
+    "helmet": "^7.1.0",
+    "moment": "^2.29.4",
+    "mongoose": "^8.16.1",
+    "socket.io": "^4.7.4",
+    "uuid": "^9.0.1",
+    "wscat": "^6.1.0"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.9",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.23",
+    "@types/jest": "^29.5.8",
+    "@types/moment": "^2.13.0",
+    "@types/mongoose": "^5.11.96",
+    "@types/node": "^20.10.0",
+    "@types/uuid": "^9.0.7",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.3.2"
+  },
+  "keywords": [
+    "whatsapp",
+    "clone",
+    "chat",
+    "real-time",
+    "socket.io"
+  ],
+  "author": "",
+  "license": "MIT"
+}

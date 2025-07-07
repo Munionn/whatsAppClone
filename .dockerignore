@@ -1,0 +1,1 @@
+# If there is a line like 'shared/' or '/shared', comment it out to allow shared to be copied into Docker images 

@@ -33,9 +33,9 @@ class UserController {
             const token = req.cookies?.refreshToken || req.headers['x-refresh-token'];
             if (!token) {
                 return next(new Error('No token provided'));
-
             }
             await userService.logout(token);
+            res.clearCookie('refreshToken', { httpOnly: true, sameSite: 'lax' });
             res.status(200).send();
         } catch (error) {
             console.log(error);

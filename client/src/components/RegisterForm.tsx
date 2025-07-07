@@ -8,6 +8,8 @@ import api from "../service/api";
 import {typeError} from "../models/IError.ts";
 import {useNavigate} from "react-router-dom";
 import { authStore } from "../store/authStore";
+import { Link as RouterLink } from "react-router-dom";
+import { Link } from "@mui/material";
 
 const RegisterForm = () => {
     const navigate = useNavigate();
@@ -83,7 +85,7 @@ const RegisterForm = () => {
             }}
         >
             <Paper
-                elevation={8}
+                elevation={9}
                 sx={{
                     p: 4,
                     borderRadius: 4,
@@ -140,7 +142,7 @@ const RegisterForm = () => {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirm your password"
                 />
-
+                
                 <Button
                     type="submit"
                     variant="contained"
@@ -153,6 +155,9 @@ const RegisterForm = () => {
                     Login
                 </Button>
 
+                <Link component={RouterLink} to="/login" underline="hover" sx={{mt: 2, textAlign: 'center'}}>
+                    You Already have account
+                </Link>
             </Paper>
         </Box>
     );

@@ -1,9 +1,8 @@
-import UserModel from "../models/UserModel";
+import UserModel from "../shared/UserModel";
 import bcrypt from "bcrypt";
 import UserDto from "../dtos/UserDto";
 import tokenService from "./TokenService";
 import {TokenPayload} from "../types/tokenTypes";
-import userModel from "../models/UserModel";
 
 
 
@@ -71,7 +70,7 @@ class UserService {
         return users.map((user) => new UserDto(user));
     }
     async updateStatus(userId: number, status: 'online' | 'offline'){
-        const user = await userModel.findByIdAndUpdate(userId, {
+        const user = await UserModel.findByIdAndUpdate(userId, {
             status,
             lastSeen: status === 'offline' ?  new  Date() : undefined,
             },

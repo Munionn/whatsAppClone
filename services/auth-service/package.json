@@ -25,7 +25,8 @@
     "mongodb": "^6.17.0",
     "mongoose": "^8.16.0",
     "nodemon": "^3.1.10",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "shared": "file:../shared"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

@@ -8,15 +8,11 @@ services:
       - "27018:27017"
     volumes:
       - mongo_data:/data/db
-    # Uncomment to enable healthcheck
-    # healthcheck:
-    #   test: ["CMD-SHELL", "mongosh --eval 'db.runCommand({ ping: 1 })' --quiet"]
-    #   interval: 10s
-    #   timeout: 10s
-    #   retries: 10
 
   auth-service:
-    build: ./services/auth-service
+    build:
+      context: .
+      dockerfile: services/auth-service/Dockerfile
     ports:
       - "3001:3001"
     environment:
@@ -24,21 +20,28 @@ services:
       - JWT_SECRET=your_super_secret_key
     depends_on:
       - mongodb
-      - api-gateway
-    # Uncomment to enable healthcheck
-    # healthcheck:
-    #   test: ["CMD-SHELL", "curl -f http://localhost:3001/ || exit 1"]
-    #   interval: 10s
-    #   timeout: 10s
-    #   retries: 10
+    restart: always
+
+  main-service:
+    build: ./services/main-service
+    ports:
+      - "3002:3002"
+    environment:
+      - DB_URL=mongodb://mongodb:27017/whatsapp
+      - JWT_SECRET=your_super_secret_key
+    depends_on:
+      - mongodb
+    restart: always
 
   api-gateway:
     build: ./gateway
     ports:
       - "3000:3000"
-   
     depends_on:
       - mongodb
+      - auth-service
+      - main-service
+    restart: always
 
 volumes:
   mongo_data:
