@@ -3,4 +3,5 @@ export interface IUser {
     phone: string;
     name: string;
     status: 'online' | 'offline';
+    picture: string;
 }

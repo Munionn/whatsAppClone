@@ -31,7 +31,7 @@ app.use(cors({
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:3001';
 const MAIN_SERVICE_URL = process.env.MAIN_SERVICE_URL || 'http://main-service:3002';
 
-// 📦 Main Service Proxy (REST + socket.io fallback)
+
 app.use('/main', createProxyMiddleware({
     target: MAIN_SERVICE_URL,
     changeOrigin: true,

@@ -50,6 +50,7 @@ class UserController {
                 return next(new Error('No token provided'));
             }
             const result = await userService.refresh(token);
+            res.cookie('refreshToken', result.refreshToken, { httpOnly: true, sameSite: 'lax' });
             res.json(result);
         } catch (error) {
             console.log(error);

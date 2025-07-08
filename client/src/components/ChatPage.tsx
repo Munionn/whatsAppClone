@@ -1,15 +1,23 @@
 import React, { useEffect, useState, useRef } from "react";
+import { observer } from "mobx-react-lite";
 import { io, Socket } from "socket.io-client";
+import chatStore from "../store/chatStore";
+import type { IMessage } from "../models/Message";
 
-// Replace with your actual API URL or gateway URL
 const SOCKET_URL = "http://localhost:3000"; // Gateway URL
 
-const ChatPage: React.FC = () => {
-  const [messages, setMessages] = useState<string[]>([]);
+const ChatPage: React.FC = observer(() => {
   const [input, setInput] = useState("");
   const socketRef = useRef<Socket | null>(null);
+  const selectedChat = chatStore.selectedChat;
+
+  // Assume you have a way to get messages for the selected chat
+  // For example, selectedChat?.messages or a separate store
+  const [messages, setMessages] = useState<IMessage[]>([]);
 
   useEffect(() => {
+    if (!selectedChat) return;
+
     // Connect to the gateway's Socket.IO endpoint
     const socket = io(SOCKET_URL, {
       transports: ["websocket", "polling"],
@@ -17,39 +25,53 @@ const ChatPage: React.FC = () => {
     });
     socketRef.current = socket;
 
+    // Join the chat room
+    socket.emit("join-room", selectedChat.id);
+
+    // Fetch messages for the selected chat (replace with your actual fetch logic)
+    // Example: chatStore.fetchMessages(selectedChat.id).then(setMessages);
+    // For now, assume messages are in selectedChat.messages
+    // setMessages(selectedChat.messages || []);
+    
     // Listen for new messages
-    socket.on("new-message", (msg: string) => {
-      setMessages((prev) => [...prev, msg]);
+    socket.on("new-message", (msg: IMessage) => {
+      if (msg.chatId === selectedChat.id) {
+        setMessages((prev) => [...prev, msg]);
+      }
     });
 
-    // Optionally listen for connection/disconnection
-    socket.on("connect", () => {
-      console.log("Connected to chat server");
-    });
-    socket.on("disconnect", () => {
-      console.log("Disconnected from chat server");
-    });
-
-    // Cleanup on unmount
+    // Cleanup on unmount or when chat changes
     return () => {
+      socket.emit("leave-room", selectedChat.id);
       socket.disconnect();
     };
-  }, []);
+  }, [selectedChat?.id]);
 
   const sendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim() && socketRef.current) {
-      socketRef.current.emit("send-message", input);
+    if (input.trim() && socketRef.current && selectedChat) {
+      const message: Partial<IMessage> = {
+        chatId: selectedChat.id,
+        text: input,
+        // Add other fields as needed (senderId, etc.)
+      };
+      socketRef.current.emit("send-message", message);
       setInput("");
     }
   };
 
+  if (!selectedChat) {
+    return <div style={{ textAlign: "center", marginTop: 40 }}>Select a chat to start messaging.</div>;
+  }
+
   return (
     <div style={{ maxWidth: 400, margin: "40px auto", padding: 20, border: "1px solid #ccc", borderRadius: 8 }}>
-      <h2>Simple Chat</h2>
+      <h2>{selectedChat.name}</h2>
       <div style={{ minHeight: 200, border: "1px solid #eee", padding: 10, marginBottom: 10, borderRadius: 4, background: "#fafafa", overflowY: "auto", maxHeight: 300 }}>
         {messages.map((msg, idx) => (
-          <div key={idx} style={{ margin: "4px 0" }}>{msg}</div>
+          <div key={msg.id || idx} style={{ margin: "4px 0" }}>
+            <b>{msg.senderId}:</b> {msg.text}
+          </div>
         ))}
       </div>
       <form onSubmit={sendMessage} style={{ display: "flex", gap: 8 }} autoComplete="off">
@@ -69,6 +91,6 @@ const ChatPage: React.FC = () => {
       </form>
     </div>
   );
-};
+});
 
 export default ChatPage;
