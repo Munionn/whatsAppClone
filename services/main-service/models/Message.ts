@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import {Message} from "../types/types";
+import {IMessage} from "../types/types";
 
 
-const MessageSchema = new Schema<Message>({
+const MessageSchema = new Schema<IMessage>({
     id:           { type: String, required: true, unique: true },
     chatId:       { type: String, required: true },
     senderId:     { type: String, required: true },

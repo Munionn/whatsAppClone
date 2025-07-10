@@ -42,7 +42,7 @@ api.interceptors.response.use(
                 return api.request(originalRequest);
             } catch (refreshError) {
                 localStorage.removeItem('token');
-                // Здесь можно добавить редирект на /login или другую логику выхода
+                
                 console.log('NOT AUTHORIZED');
             }
         }

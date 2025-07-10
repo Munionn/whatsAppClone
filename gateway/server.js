@@ -27,7 +27,7 @@ app.use(cors({
     credentials: true,
 }));
 
-// Target service URLs from environment or default to Docker service names
+// Target services URLs from environment or default to Docker services names
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:3001';
 const MAIN_SERVICE_URL = process.env.MAIN_SERVICE_URL || 'http://main-service:3002';
 
@@ -38,7 +38,7 @@ app.use('/main', createProxyMiddleware({
     pathRewrite: { '^/main': '' },
 }));
 
-// Default route
+// Default routes
 app.get('/', (req, res) => {
     res.json({ message: 'Gateway Server is running.' });
 });

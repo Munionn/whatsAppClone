@@ -7,7 +7,7 @@ export interface User {
   lastSeen: Date;
 }
 
-export interface Message {
+export interface IMessage {
   id: string;
   chatId: string;
   senderId: string;
@@ -24,11 +24,13 @@ export interface Chat {
   name: string;
   type: 'private' | 'group';
   participants: string[]; // User IDs
-  lastMessage?: Message;
+  lastMessage?: IMessage;
   unreadCount: number;
   createdAt: Date;
   updatedAt: Date;
 }
+
+
 
 export interface ChatMember {
   userId: string;
@@ -37,6 +39,7 @@ export interface ChatMember {
   joinedAt: Date;
   lastReadMessageId?: string;
 }
+
 
 export interface SocketUser {
   userId: string;
@@ -51,7 +54,7 @@ export interface TypingEvent {
 }
 
 export interface MessageEvent {
-  message: Message;
+  message: IMessage;
   chatId: string;
 }
 

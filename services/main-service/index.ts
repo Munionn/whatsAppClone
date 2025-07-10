@@ -1,19 +1,13 @@
+// @ts-ignore
 import express from 'express';
+// @ts-ignore
 import http from 'http';
 import { Server } from 'socket.io';
 import mongoose from "mongoose";
-import Message from "./src/models/Message";
-// import MessageController from './controllers/MessageController';
+import Message from "./models/Message";
+import {connectSocketHandler} from "./socket/socket.handler";
+import messageRoute from "./routes/message.route";
 
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"],
-        credentials: true
-    }
-});
 const DB_URL = process.env.DB_URL ||'mongodb://localhost:27017/whatsapp';
 
 const connectToMongoDB = async () => {
@@ -26,29 +20,20 @@ const connectToMongoDB = async () => {
     }
 };
 
-io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
-
-    socket.on("join-room", (roomId) => {
-        socket.join(roomId);
-        console.log(`User joined room: ${roomId}`);
-    });
-
-    socket.on("leave-room", (roomId) => {
-        socket.leave(roomId);
-        console.log(`User left room: ${roomId}`);
-    });
-
-    socket.on("disconnect", () => {
-        console.log("User disconnected");
-    });
-
-    socket.on("send-message", async (message) => {
-        console.log("Message received:", message);
-        const saveMessage = await Message.create(message);
-        io.to(message.id).emit("message", saveMessage);
-    });
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"],
+        credentials: true
+    }
 });
+
+app.use("/messages", messageRoute);
+
+connectSocketHandler(io);
+
 
 const PORT = Number(process.env.PORT) || 3002;
 const startServer = () => {
