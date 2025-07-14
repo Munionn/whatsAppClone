@@ -27,8 +27,7 @@ app.use(cors({
     credentials: true,
 }));
 
-// Target services URLs from environment or default to Docker services names
-const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:3001';
+
 const MAIN_SERVICE_URL = process.env.MAIN_SERVICE_URL || 'http://main-service:3002';
 
 
@@ -36,6 +35,14 @@ app.use('/main', createProxyMiddleware({
     target: MAIN_SERVICE_URL,
     changeOrigin: true,
     pathRewrite: { '^/main': '' },
+    onProxyReq: (proxyReq, req) => {
+        if (req.body) {
+            const bodyData = JSON.stringify(req.body);
+            proxyReq.setHeader('Content-Type', 'application/json');
+            proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+            proxyReq.write(bodyData);
+        }
+    }
 }));
 
 // Default routes

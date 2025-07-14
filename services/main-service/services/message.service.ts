@@ -1,21 +1,21 @@
 import Message from "../models/Message";
 import {IMessage} from "../types/types";
 import chat from "../models/Chat";
+import { Types } from 'mongoose';
 
-export default class MessageService {
+class MessageService {
 
     async createMessage(data: IMessage): Promise<IMessage> {
         const {
             chatId,
             senderId,
             content,
-            type = 'text',
-            timestamp,
+            type,
             isRead,
             replyTo,
             editedAt,
         } = data;
-        if ( !chatId || !senderId || !content) {
+        if (!chatId || !senderId || !content) {
             throw new Error("Can't create message.");
         }
 
@@ -24,85 +24,73 @@ export default class MessageService {
         return message;
     }
 
-    async getMessages(chatId: string): Promise<IMessage[]> {
-        const chatMessages: IMessage[] = await Message.find({where: { chatId: chatId}}).sort({createdAt: 1}).exec();
-        if(chatMessages === null ) return [];
-
-        return chatMessages;
+    async getMessages(chatId: Types.ObjectId): Promise<IMessage[]> {
+        const chatMessages = await Message.find({ chatId }).sort({ createdAt: 1 }).exec();
+        return chatMessages || [];
     }
 
-    async getSpecificMessages(chatId: string, messageId: string): Promise<IMessage> {
-        const message = await Message.findOne({where: {_id: messageId, chatId}})
-            .exec();
-        if(!message) return null;
+    async getSpecificMessages(chatId: Types.ObjectId, messageId: Types.ObjectId): Promise<IMessage | null> {
+        const message = await Message.findOne({ _id: messageId, chatId }).exec();
         return message;
     }
 
-    async readMessages(chatId: string, messageId: string): Promise<void> {
+    async readMessages(chatId: Types.ObjectId, messageId: Types.ObjectId): Promise<void> {
         try {
             const updateMessage = await Message.findOneAndUpdate(
-                {
-                    _id: messageId,
-                    chatId
-                },
+                { _id: messageId, chatId },
                 { $set: { isRead: true } },
                 { new: true }
-            )
-            .exec();
+            ).exec();
 
-            if(!updateMessage){
+            if (!updateMessage) {
                 console.warn(`Message with ID ${messageId} not found in chat ${chatId} or could not be updated.`);
-                return null;
+                return;
             }
-        }
-        catch(err) {
+        } catch (err: unknown) {
             console.log(err);
-            throw new Error(err.message);
+            throw err instanceof Error ? err : new Error('Unknown error occurred');
         }
     }
 
-
-    async editMessage(chatId: string, messageId: string, content: string): Promise<IMessage> {
+    async editMessage(chatId: Types.ObjectId, messageId: Types.ObjectId, content: string): Promise<IMessage | null> {
         try {
             const updateMessage = await Message.findOneAndUpdate(
-                {_id: messageId, chatId},
-                { $set: { content, editedAt: Date() } },
-                {new: true}
+                { _id: messageId, chatId },
+                { $set: { content, editedAt: new Date() } },
+                { new: true }
             ).exec();
-            if(!updateMessage){
+
+            if (!updateMessage) {
                 console.warn(`Message with ID ${messageId} not found in chat.`);
                 return null;
             }
             return updateMessage;
-        }
-        catch(err) {
-            throw new Error(err.message);
+        } catch (err: unknown) {
+            throw err instanceof Error ? err : new Error('Unknown error occurred');
         }
     }
-    async deleteMessage(messageId: string): Promise<IMessage> {
+
+    async deleteMessage(messageId: Types.ObjectId): Promise<IMessage | null> {
         try {
-            const deleteMessage: IMessage = await Message.findOneAndDelete(
-                {_id: messageId},
-            ).exec();
-            if(!deleteMessage){
+            const deleteMessage = await Message.findOneAndDelete({ _id: messageId }).exec();
+            if (!deleteMessage) {
                 console.warn(`Message with ID ${messageId} not found in chat.`);
                 return null;
             }
             return deleteMessage;
-        }
-        catch(err) {
-            throw new Error(err.message);
+        } catch (err: unknown) {
+            throw err instanceof Error ? err : new Error('Unknown error occurred');
         }
     }
 
-    async getUnreadMessages(chatId: string): Promise<IMessage[]> {
-        try{
-            const messages: IMessage[] = await Message.find({where: {chatId, isRead: false}}).sort({createdAt: 1}).exec();
-            if(messages === null ) return [];
-            return messages;
-        }
-        catch(err) {
-            throw new Error(err.message);
+    async getUnreadMessages(chatId: Types.ObjectId): Promise<IMessage[]> {
+        try {
+            const messages = await Message.find({ chatId, isRead: false }).sort({ createdAt: 1 }).exec();
+            return messages || [];
+        } catch (err: unknown) {
+            throw err instanceof Error ? err : new Error('Unknown error occurred');
         }
     }
 }
+
+export default new MessageService();
