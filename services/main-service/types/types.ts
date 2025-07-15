@@ -45,6 +45,14 @@ export interface IChat extends BaseDocument {
   avatar?: string;
   description?: string;
 }
+export interface IChatCreate {
+  name?: string;
+  type: 'private' | 'group';
+  participants: Types.ObjectId[];
+  admins?: Types.ObjectId[];
+  avatar?: string;
+  description?: string;
+}
 
 export interface IChatMember extends BaseDocument {
   userId: Types.ObjectId;
