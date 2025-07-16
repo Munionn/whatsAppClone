@@ -1,7 +1,7 @@
 import {Schema, model} from "mongoose";
-import { ChatMember} from "../types/types";
+import { IChatMember} from "../types/types";
 
-const ChatMemberSchema = new Schema<ChatMember>({
+const ChatMemberSchema = new Schema<IChatMember>({
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     chatId: { type: Schema.Types.ObjectId, ref: "Chat", required: true },
     role: { type: String, enum: ["admin", "member"], default: "member" },
@@ -9,4 +9,4 @@ const ChatMemberSchema = new Schema<ChatMember>({
     lastReadMessageId: { type: Schema.Types.ObjectId, ref: "Message", default: null },
 });
 
-export default model<ChatMember>('ChatMember',ChatMemberSchema);
+export default model('ChatMember',ChatMemberSchema);

@@ -14,4 +14,6 @@ const ChatSchema = new Schema<IChat>(
     { timestamps: true }
 );
 
-export default model<IChat>("Chat", ChatSchema);
+export default model("Chat", ChatSchema);
+
+

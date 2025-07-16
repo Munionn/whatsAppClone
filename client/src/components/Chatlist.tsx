@@ -1,16 +1,15 @@
-import React, {useEffect} from 'react';
+import React, { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { List, ListItem, ListItemAvatar, Avatar, ListItemText, Typography, Box } from '@mui/material';
-
-// Import ChatListItem and Store
-import {ChatListItem} from "./ChatListItem.tsx";
+import { ChatListItem } from "./ChatListItem.tsx";
 import chatStore from '../store/chatStore';
-import {fetchChats} from "../test/mockFunc.ts";
 
 export const ChatList = observer(() => {
     useEffect(() => {
-        fetchChats();
+        chatStore.fetchChats();
+        console.log(chatStore.chats);
     }, []);
+
     const chats = chatStore.chatList;
 
     return (
@@ -21,16 +20,20 @@ export const ChatList = observer(() => {
 
             <List>
                 {chats.map((chat) => (
-                    <ChatListItem key={chat.id} chat={chat} />
+                    <ChatListItem
+                        key={chat._id || chat.id} // Use either _id or id
+                        chat={chat}
+                    />
                 ))}
 
                 {chats.length === 0 && (
-                    <Typography variant="body2" sx={{ p: 2 }} color="textSecondary">
-                        No chats yet
-                    </Typography>
+                    <ListItem>
+                        <Typography variant="body2" color="textSecondary">
+                            No chats yet
+                        </Typography>
+                    </ListItem>
                 )}
             </List>
         </Box>
     );
 });
-

@@ -1,22 +1,24 @@
-import {Router} from "express";
-import {Request, Response} from "express";
+import { Router } from "express";
+import { Request, Response } from "express";
+import ChatController from "../controllers/chat.controller";
 
 const router = Router();
 
-// get
-router.get('/', (req: Request, res: Response) => {})
-router.get('/:chadId', (req: Request, res: Response) => {})
-router.get('/:chadId/members', (req: Request, res: Response) => {})
+// GET
+router.get('/', ChatController.getUsersChats);
+router.get('/:chatId', ChatController.getChat);
+router.get('/:chatId/members', ChatController.getMembers);
 
-// post
-router.post('/', (req: Request, res: Response) => {})
-router.post('/:chadId/member', (req: Request, res: Response) => {})
+// POST
+router.post('/', ChatController.createChat);
+router.post('/:chatId/member', ChatController.addMembers);
 
-//patch
-router.patch('/:chadId', (req: Request, res: Response) => {})
-router.patch('/:chadId/members', (req: Request, res: Response) => {})
-//delete
-router.delete('/:chadId', (req: Request, res: Response) => {})
-router.delete('/:chadId/members/', (req: Request, res: Response) => {})
+// PATCH
+router.patch('/:chatId', ChatController.updateChatDate);
+router.patch('/:chatId/members', ChatController.updateChatMembers);
+
+// DELETE
+router.delete('/:chatId', ChatController.deleteChat);
+router.delete('/:chatId/members', ChatController.deleteMembers); // removed extra slash
 
 export default router;

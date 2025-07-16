@@ -3,8 +3,12 @@ import http from 'http';
 import { Server } from 'socket.io';
 import mongoose from "mongoose";
 import Message from "./models/Message";
+
+import Chat from "./models/Chat";
+import ChatMember from "./models/ChatMember";
 import {connectSocketHandler} from "./socket/socket.handler";
 import messageRoute from "./routes/message.route";
+import chatRoute from "./routes/chat.route";
 
 const DB_URL = process.env.DB_URL || 'mongodb://localhost:27017/whatsapp';
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
@@ -28,7 +32,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
         origin: FRONTEND_URL,
-        methods: ["GET", "POST"],
+        methods: ["GET", "POST", "PATCH", "DELETE"],
         credentials: true
     }
 });
@@ -38,7 +42,7 @@ app.use(express.json());
 
 // Routes
 app.use("/messages", messageRoute);
-app.use("/chats", messageRoute);
+app.use("/chats", chatRoute);
 
 app.get('/health', (req, res) => {
     res.status(200).json({

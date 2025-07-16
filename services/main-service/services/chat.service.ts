@@ -1,89 +1,114 @@
 import ChatMember from "../models/ChatMember";
 import Chat from "../models/Chat";
-import mongoose, {Types} from "mongoose";
-import {IChat, IChatCreate, IChatMember} from "../types/types";
-
-
-
+import mongoose, { Types } from "mongoose";
+import { IChat, IChatCreate, IChatMember } from "../types/types";
+import ApiError from "../errors/ApiError";
 
 class ChatService {
-    // get
+    // GET METHODS
     async getUsersChats(userId: Types.ObjectId): Promise<IChat[]> {
-        try{
-            const userChats: IChat[] = await Chat.find({where: {parciticipants: userId}})
+        try {
+            console.log("Fetching chats for userId:", userId); // Debug
+
+            if (!(userId instanceof Types.ObjectId)) {
+                throw new ApiError(400, 'userId must be a valid ObjectId');
+            }
+
+            const userChats = await Chat.find({ participants: userId })
+                .lean();
+
+            console.log("Found chats:", userChats); // Debug
+
             return userChats;
-        }
-        catch (error) {
-            throw new Error(error);
+        } catch (error) {
+            console.error("Error in getUsersChats:", error); // Log the real error
+            throw new ApiError(500, 'Failed to fetch user chats');
         }
     }
 
     async getChat(chatId: Types.ObjectId): Promise<IChat> {
-        try{
-            const chat = await Chat.findOne({where:{ _id : chatId}})
+        try {
+            const chat = await Chat.findById(chatId)
+                .populate('participants', 'username profilePic status')
+                .populate('lastMessage')
+                .lean();
+
+            if (!chat) {
+                throw new ApiError(404, 'Chat not found');
+            }
             return chat;
-        }
-        catch(err){
-            throw new Error(`${chatId} does not exist`);
+        } catch (error) {
+            if (error instanceof mongoose.Error.CastError) {
+                throw new ApiError(400, 'Invalid chat ID format');
+            }
+            throw new ApiError(500, 'Failed to fetch chat');
         }
     }
 
     async getMembers(chatId: Types.ObjectId): Promise<IChatMember[]> {
         try {
-            const membersOfTheChat: IChatMember[] = await ChatMember.find({where:  { chatId}})
-            return membersOfTheChat;
-        }
-        catch (error) {
-            throw new Error(`${chatId} does not exist`);
+            const members = await ChatMember.find({ chatId })
+                .populate('userId', 'username profilePic status')
+                .lean();
+            return members;
+        } catch (error) {
+            if (error instanceof mongoose.Error.CastError) {
+                throw new ApiError(400, 'Invalid chat ID format');
+            }
+            throw new ApiError(500, 'Failed to fetch members');
         }
     }
 
-    // post
-    // create chat
-    async createChat(chat: IChatCreate): Promise<IChat> {
+    // POST METHODS
+    async createChat(chatData: IChatCreate): Promise<IChat> {
         try {
             // Validate required fields
-            if (!chat.name && chat.type !== 'private') {
-                throw new Error('Chat name is required for group chats');
+            if (!chatData.name && chatData.type !== 'private') {
+                throw new ApiError(400, 'Chat name is required for group chats');
             }
 
-            if (!chat.type || !['private', 'group'].includes(chat.type)) {
-                throw new Error('Invalid chat type');
+            if (!chatData.type || !['private', 'group'].includes(chatData.type)) {
+                throw new ApiError(400, 'Invalid chat type');
             }
 
-            if (!chat.participants || chat.participants.length === 0) {
-                throw new Error('At least one participant is required');
+            if (!chatData.participants || chatData.participants.length === 0) {
+                throw new ApiError(400, 'At least one participant is required');
             }
 
-
-            if (chat.type === 'private' && chat.participants.length !== 2) {
-                throw new Error('Private chats must have exactly 2 participants');
+            if (chatData.type === 'private' && chatData.participants.length !== 2) {
+                throw new ApiError(400, 'Private chats must have exactly 2 participants');
             }
 
             // Create the chat document
             const newChat = await Chat.create({
-                name: chat.name,
-                type: chat.type,
-                participants: chat.participants,
-                admins: chat.admins || [chat.participants[0]],
-                avatar: chat.avatar,
-                description: chat.description,
-                unreadCounts: {} // Initialize empty unread counts
+                ...chatData,
+                admins: chatData.admins || [chatData.participants[0]],
+                unreadCounts: {}
             });
 
-
-            const chatMembers = chat.participants.map((userId, index) => ({
+            // Create chat member records
+            const chatMembers = chatData.participants.map((userId, index) => ({
                 userId,
                 chatId: newChat._id,
-                role: index === 0 ? 'creator' : 'member', // First participant is creator
+                role: index === 0 ? 'creator' : 'member',
                 joinedAt: new Date()
             }));
 
             await ChatMember.insertMany(chatMembers);
 
-            return newChat.toObject();
+            // Return populated chat
+            const populatedChat = await Chat.findById(newChat._id)
+                .populate('participants', 'username profilePic status')
+                .populate('lastMessage')
+                .lean();
+
+            if (!populatedChat) {
+                throw new ApiError(500, 'Failed to retrieve created chat');
+            }
+
+            return populatedChat;
         } catch (error) {
-            throw new Error(error instanceof Error ? error.message : 'Failed to create chat');
+            throw new ApiError(500, 'Failed to create chat');
         }
     }
 
@@ -94,38 +119,36 @@ class ChatService {
         role: 'admin' | 'member' = 'member'
     ): Promise<IChat> {
         try {
-            // 1. Verify the chat exists
+            // Verify the chat exists
             const chat = await Chat.findById(chatId);
             if (!chat) {
-                throw new Error(`Chat ${chatId} does not exist`);
+                throw new ApiError(404, 'Chat not found');
             }
 
-            // 2. Verify current user has permission to add members (is admin/creator)
+            // Verify current user has permission
             const currentMember = await ChatMember.findOne({
                 chatId,
                 userId: currentUserId
             });
 
             if (!currentMember || (currentMember.role !== 'admin' && currentMember.role !== 'creator')) {
-                throw new Error('You do not have permission to add members');
+                throw new ApiError(403, 'Only admins can add members');
             }
 
-            // 3. Filter out existing members
+            // Filter out existing members
             const existingMembers = await ChatMember.find({
                 chatId,
                 userId: { $in: userIds }
             });
 
             const existingUserIds = existingMembers.map(m => m.userId.toString());
-            const newUserIds = userIds.filter(id =>
-                !existingUserIds.includes(id.toString())
-            );
+            const newUserIds = userIds.filter(id => !existingUserIds.includes(id.toString()));
 
             if (newUserIds.length === 0) {
-                throw new Error('All users are already members of this chat');
+                throw new ApiError(400, 'All users are already members');
             }
 
-            // 4. Add new members
+            // Add new members
             const newMembers = newUserIds.map(userId => ({
                 userId,
                 chatId,
@@ -135,65 +158,76 @@ class ChatService {
 
             await ChatMember.insertMany(newMembers);
 
-            // 5. Update chat participants list
+            // Update chat
             const updatedChat = await Chat.findByIdAndUpdate(
                 chatId,
                 {
                     $addToSet: { participants: { $each: newUserIds } },
                     $set: { updatedAt: new Date() }
                 },
-                { new: true }
-            ).populate('participants', 'username profilePic status');
-
-            if (!updatedChat) {
-                throw new Error('Failed to update chat');
-            }
-
-            return updatedChat.toObject();
-        } catch (error) {
-            throw new Error(error instanceof Error ? error.message : 'Failed to add members');
-        }
-    }
-    // patch methods
-
-    async updateChatDate(chatId: Types.ObjectId, chatInfo: Partial<IChat>): Promise<IChat> {
-        try {
-            const updateChat = await Chat.findByIdAndUpdate(
-                chatId,
                 {
-                    $set: {
-                        ...chatInfo,
-                        updatedAt: new Date() // Always update the timestamp
-                    }
-                },
-                {
-                    new: true, // Return the updated document
-                    runValidators: true // Run schema validators on update
+                    new: true,
+                    runValidators: true
                 }
             )
                 .populate('participants', 'username profilePic status')
-                .populate('lastMessage');
+                .populate('lastMessage')
+                .lean();
 
-            if (!updateChat) {
-                throw new Error('Chat not found');
+            if (!updatedChat) {
+                throw new ApiError(500, 'Failed to update chat');
             }
 
-            return updateChat.toObject();
+            return updatedChat;
         } catch (error) {
             if (error instanceof mongoose.Error.CastError) {
-                throw new Error('Invalid chat ID format');
+                throw new ApiError(400, 'Invalid ID format');
             }
-            if (error instanceof mongoose.Error.ValidationError) {
-                throw new Error(`Validation error: ${error.message}`);
-            }
-            throw new Error("Failed to update chat's date");
+            throw new ApiError(500, 'Failed to add members');
         }
     }
 
-    // update chat member
+    // PATCH METHODS
+    async updateChatDate(chatId: Types.ObjectId, updates: Partial<IChat>): Promise<IChat> {
+        try {
+            const { _id, createdAt, updatedAt, ...safeUpdates } = updates;
+
+            const updatedChat = await Chat.findByIdAndUpdate(
+                chatId,
+                {
+                    $set: {
+                        ...safeUpdates,
+                        updatedAt: new Date()
+                    }
+                },
+                {
+                    new: true,
+                    runValidators: true
+                }
+            )
+                .populate('participants', 'username profilePic status')
+                .populate('lastMessage')
+                .lean();
+
+            if (!updatedChat) {
+                throw new ApiError(404, 'Chat not found');
+            }
+
+            return updatedChat;
+        } catch (error) {
+            if (error instanceof mongoose.Error.CastError) {
+                throw new ApiError(400, 'Invalid chat ID format');
+            }
+            if (error instanceof mongoose.Error.ValidationError) {
+                throw new ApiError(400, `Validation error: ${error.message}`);
+            }
+            throw new ApiError(500, "Failed to update chat");
+        }
+    }
+
     async updateChatMembers(
         chatId: Types.ObjectId,
-        userId: Types.ObjectId, // The user making the request
+        currentUserId: Types.ObjectId,
         updateData: {
             addMembers?: Types.ObjectId[];
             removeMembers?: Types.ObjectId[];
@@ -202,28 +236,34 @@ class ChatService {
         }
     ): Promise<IChat> {
         try {
-
+            // Verify chat exists
             const chat = await Chat.findById(chatId);
             if (!chat) {
-                throw new Error('Chat not found');
+                throw new ApiError(404, 'Chat not found');
             }
 
+            // Verify current user has permission
+            const currentMember = await ChatMember.findOne({
+                chatId,
+                userId: currentUserId
+            });
 
-            if (!chat.admins?.some(adminId => adminId.equals(userId))) {
-                throw new Error('Only admins can update chat members');
+            if (!currentMember || (currentMember.role !== 'admin' && currentMember.role !== 'creator')) {
+                throw new ApiError(403, 'Only admins can update members');
             }
 
-
-            const updateOps: any = { updatedAt: new Date() };
+            // Prepare update operations
+            const updateOps: Record<string, any> = { updatedAt: new Date() };
 
             if (updateData.addMembers?.length) {
                 updateOps.$addToSet = { participants: { $each: updateData.addMembers } };
             }
 
             if (updateData.removeMembers?.length) {
-                updateOps.$pullAll = { participants: updateData.removeMembers };
-                // Also remove from admins if they were admins
-                updateOps.$pullAll = { ...updateOps.$pullAll, admins: updateData.removeMembers };
+                updateOps.$pull = {
+                    participants: { $in: updateData.removeMembers },
+                    admins: { $in: updateData.removeMembers }
+                };
             }
 
             if (updateData.newAdmins?.length) {
@@ -231,52 +271,133 @@ class ChatService {
             }
 
             if (updateData.removeAdmins?.length) {
-                updateOps.$pullAll = { admins: updateData.removeAdmins };
+                updateOps.$pull = { admins: { $in: updateData.removeAdmins } };
             }
 
-            // 3. Perform the update
+            // Perform the update
             const updatedChat = await Chat.findByIdAndUpdate(
                 chatId,
                 updateOps,
-                { new: true, runValidators: true }
-            ).populate('participants', 'username profilePic status');
+                {
+                    new: true,
+                    runValidators: true
+                }
+            )
+                .populate('participants', 'username profilePic status')
+                .populate('lastMessage')
+                .lean();
 
             if (!updatedChat) {
-                throw new Error('Failed to update chat members');
+                throw new ApiError(500, 'Failed to update chat members');
+            }
+
+            // Update ChatMember collection
+            if (updateData.addMembers?.length) {
+                const newMembers = updateData.addMembers.map(userId => ({
+                    userId,
+                    chatId,
+                    role: 'member',
+                    joinedAt: new Date()
+                }));
+                await ChatMember.insertMany(newMembers);
+            }
+
+            if (updateData.removeMembers?.length) {
+                await ChatMember.deleteMany({
+                    chatId,
+                    userId: { $in: updateData.removeMembers }
+                });
+            }
+
+            if (updateData.newAdmins?.length) {
+                await ChatMember.updateMany(
+                    { chatId, userId: { $in: updateData.newAdmins } },
+                    { $set: { role: 'admin' } }
+                );
+            }
+
+            if (updateData.removeAdmins?.length) {
+                await ChatMember.updateMany(
+                    { chatId, userId: { $in: updateData.removeAdmins } },
+                    { $set: { role: 'member' } }
+                );
             }
 
             return updatedChat;
         } catch (error) {
-            if (error instanceof Error) throw error;
-            throw new Error('Error updating chat members');
+            if (error instanceof mongoose.Error.CastError) {
+                throw new ApiError(400, 'Invalid ID format');
+            }
+            throw new ApiError(500, 'Failed to update members');
         }
     }
 
-    // delete
-
-    async deleteChat(chatId: Types.ObjectId): Promise<IChat> {
+    // DELETE METHODS
+    async deleteChat(chatId: Types.ObjectId, currentUserId: Types.ObjectId): Promise<IChat> {
         try {
-            const deletedChat  = await Chat.findByIdAndDelete({_id: chatId})
-            await ChatMember.deleteMany({chatId})
+            // Verify chat exists and user has permission
+            const chat = await Chat.findById(chatId);
+            if (!chat) {
+                throw new ApiError(404, 'Chat not found');
+            }
+
+            const member = await ChatMember.findOne({
+                chatId,
+                userId: currentUserId
+            });
+
+            if (!member || (member.role !== 'admin' && member.role !== 'creator')) {
+                throw new ApiError(403, 'Only admins can delete chats');
+            }
+
+            // Delete chat and members
+            const deletedChat = await Chat.findByIdAndDelete(chatId)
+                .populate('participants', 'username profilePic status')
+                .lean();
+
+            if (!deletedChat) {
+                throw new ApiError(500, 'Failed to delete chat');
+            }
+
+            await ChatMember.deleteMany({ chatId });
+
             return deletedChat;
-        }
-        catch (error) {
-            throw  new Error('Failed to delete chat');
+        } catch (error) {
+            if (error instanceof mongoose.Error.CastError) {
+                throw new ApiError(400, 'Invalid chat ID format');
+            }
+            throw new ApiError(500, 'Failed to delete chat');
         }
     }
 
     async deleteMembers(
         chatId: Types.ObjectId,
-        userIds: Types.ObjectId[]
+        userIds: Types.ObjectId[],
+        currentUserId: Types.ObjectId
     ): Promise<IChat> {
         try {
-
+            // Verify chat exists
             const chat = await Chat.findById(chatId);
             if (!chat) {
-                throw new Error('Chat not found');
+                throw new ApiError(404, 'Chat not found');
             }
 
+            // Verify current user has permission
+            const currentMember = await ChatMember.findOne({
+                chatId,
+                userId: currentUserId
+            });
 
+            if (!currentMember || (currentMember.role !== 'admin' && currentMember.role !== 'creator')) {
+                throw new ApiError(403, 'Only admins can remove members');
+            }
+
+            // Prevent self-removal
+            if (userIds.some(id => id.equals(currentUserId))) {
+                throw new ApiError(400, 'Cannot remove yourself from chat');
+            }
+
+            // Update chat document
             const updatedChat = await Chat.findByIdAndUpdate(
                 chatId,
                 {
@@ -292,22 +413,27 @@ class ChatService {
                 }
             )
                 .populate('participants', 'username profilePic status')
-                .populate('lastMessage');
+                .populate('lastMessage')
+                .lean();
 
             if (!updatedChat) {
-                throw new Error('Failed to remove members from chat');
+                throw new ApiError(500, 'Failed to update chat');
             }
+
+            // Remove from ChatMember collection
+            await ChatMember.deleteMany({
+                chatId,
+                userId: { $in: userIds }
+            });
 
             return updatedChat;
         } catch (error) {
             if (error instanceof mongoose.Error.CastError) {
-                throw new Error('Invalid chat or user ID format');
+                throw new ApiError(400, 'Invalid ID format');
             }
-            throw error; // Re-throw other errors
+            throw new ApiError(500, 'Failed to remove members');
         }
     }
-
 }
-
 
 export default new ChatService();

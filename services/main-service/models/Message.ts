@@ -67,4 +67,4 @@ MessageSchema.index({ chatId: 1, createdAt: -1 }); // For fetching messages in a
 MessageSchema.index({ senderId: 1 }); // For finding messages by sender
 MessageSchema.index({ 'metadata.fileName': 'text' }); // For text search on filenames
 
-export default model<IMessage>('Message', MessageSchema);
+export default model('Message', MessageSchema);

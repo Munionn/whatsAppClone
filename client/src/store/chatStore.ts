@@ -2,14 +2,50 @@ import { makeAutoObservable, runInAction} from "mobx";
 import api from "../service/api.ts";
 import type {IChat} from "../models/Chat.ts";
 import type {IMessage} from "../models/Message.ts";
+import {authStore} from "./authStore.ts";
 
 class ChatStore {
     chats: Map<string, IChat> = new Map<string, IChat>();
     selectedChatId: string | null = null;
-
+    isLoading: boolean = false;
+    error: Error | null = null;
     constructor() {
         makeAutoObservable(this);
     }
+
+    fetchChats = async () => {
+        this.isLoading = true;
+        this.error = null;
+
+        try {
+            const userJson = localStorage.getItem('user');
+            if (!userJson) {
+                throw new Error('User not found in localStorage');
+            }
+
+            const user = JSON.parse(userJson);
+
+            const response = await api.get('/main/chats', {
+                params: {
+                    userId: user.id,
+                }
+            });
+
+            runInAction(() => {
+                this.setChats(response.data);
+            });
+        } catch (err) {
+            runInAction(() => {
+                this.error = err as Error;
+            });
+            console.error('Failed to fetch chats:', err);
+        } finally {
+            runInAction(() => {
+                this.isLoading = false;
+            });
+        }
+    };
+
 
     setChats(chats: IChat[]) {
         chats.forEach((chat: IChat) => {
