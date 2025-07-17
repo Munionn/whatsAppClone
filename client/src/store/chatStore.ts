@@ -2,11 +2,12 @@ import { makeAutoObservable, runInAction} from "mobx";
 import api from "../service/api.ts";
 import type {IChat} from "../models/Chat.ts";
 import type {IMessage} from "../models/Message.ts";
-import {authStore} from "./authStore.ts";
+
 
 class ChatStore {
     chats: Map<string, IChat> = new Map<string, IChat>();
     selectedChatId: string | null = null;
+    messages: IMessage[] = [];
     isLoading: boolean = false;
     error: Error | null = null;
     constructor() {
@@ -32,7 +33,7 @@ class ChatStore {
             });
 
             runInAction(() => {
-                this.setChats(response.data);
+                this.setChats(response.data as IChat[]);
             });
         } catch (err) {
             runInAction(() => {
@@ -46,15 +47,42 @@ class ChatStore {
         }
     };
 
+    // message function
+    fetchMessages = async () => {
+        try{
+            const response = await api.get(`/messages/${this.selectedChatId}`)
+            this.messages = response.data as IMessage[];
+            return this.messages;
+        }
+        catch(err){
+            throw err as Error;
+        }
+    }
 
+    setMessages = async (data: IMessage[]) => {
+        this.messages = data;
+    }
+
+    addMessage(message: IMessage) {
+        runInAction(() => {
+            this.messages.push(message);
+        });
+    }
+
+    // -----------------------------------
     setChats(chats: IChat[]) {
         chats.forEach((chat: IChat) => {
-            this.chats.set(chat.id, chat);
-        })
+            const chatId =  chat._id;
+            if (!chatId) {
+                console.error("Chat missing id or _id", chat);
+                return;
+            }
+            this.chats.set(chatId, chat);
+        });
     }
 
     addChat(chat: IChat) {
-        this.chats.set(chat.id, chat);
+        this.chats.set(chat._id, chat);
     }
 
     updateLastMessage(chatId: string, message: IMessage) {
@@ -86,7 +114,8 @@ class ChatStore {
     }
 
     get selectedChat(): IChat | undefined {
-        return this.chats.get(this.selectedChatId || "");
+        if (!this.selectedChatId) return undefined;
+        return this.chats.get(this.selectedChatId);
     }
 
     get chatList(): IChat[] {
@@ -94,7 +123,7 @@ class ChatStore {
     }
 
     removeChat(chat: IChat) {
-        this.chats.delete(chat.id);
+        this.chats.delete(chat._id);
     }
 
 }

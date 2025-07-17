@@ -11,7 +11,7 @@ import messageRoute from "./routes/message.route";
 import chatRoute from "./routes/chat.route";
 
 const DB_URL = process.env.DB_URL || 'mongodb://localhost:27017/whatsapp';
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const FRONTEND_URL = "http://localhost:5173";
 
 const connectToMongoDB = async () => {
     try {

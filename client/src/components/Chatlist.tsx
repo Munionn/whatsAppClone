@@ -21,7 +21,7 @@ export const ChatList = observer(() => {
             <List>
                 {chats.map((chat) => (
                     <ChatListItem
-                        key={chat._id || chat.id} // Use either _id or id
+                        key={chat._id } // Use either _id or id
                         chat={chat}
                     />
                 ))}

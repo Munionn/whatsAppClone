@@ -1,6 +1,5 @@
-import { Server} from "socket.io";
+import { Server } from "socket.io";
 import Message from "../models/Message";
-
 
 export const connectSocketHandler = (io: Server) => {
     io.on("connection", (socket) => {
@@ -20,11 +19,29 @@ export const connectSocketHandler = (io: Server) => {
             console.log("User disconnected");
         });
 
-        socket.on("send-message", async (message) => {
-            console.log("Message received:", message);
-            const saveMessage = await Message.create(message);
-            io.to(message.id).emit("message", saveMessage);
+        socket.on("send-message", async (message): Promise<void> => {
+            const { chatId, senderId, text, type } = message;
+
+            if (!chatId || !text || !senderId) {
+                socket.emit("error", "Missing required fields");
+                return ;
+            }
+
+            const newMessage = new Message({
+                chatId,
+                senderId,
+                content: text,
+                type: type || "text"
+            });
+
+            try {
+                await newMessage.save();
+                io.to(chatId).emit("new-message", newMessage);
+            } catch (err) {
+                console.error("Error saving message:", err);
+                socket.emit("error", "Failed to send message");
+                return;
+            }
         });
     });
-
-}
+};

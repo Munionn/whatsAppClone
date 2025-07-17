@@ -2,6 +2,7 @@ import { Box, Drawer, AppBar, Toolbar, IconButton, Typography, List, ListItem, L
 // import { Menu, Search, Chat, MoreVert, Send, AttachFile, EmojiEmotions } from '@mui/icons-material';
 import {Sidebar} from "./Sidebar.tsx";
 import ChatPage from "./ChatPage.tsx";
+import chatStore from "../store/chatStore.ts";
 
 
 export function MainPage() {
@@ -9,6 +10,7 @@ export function MainPage() {
         <Box sx={{ display: 'flex', height: '100vh' }}>
             <Sidebar />
             <ChatPage/>
+            {/*{chatStore.selectedChatId && <ChatPage/>}*/}
             {/*<ChatWindow />*/}
             {/*<ContactInfoPanel />*/}
             {/*<NewChatModal />*/}

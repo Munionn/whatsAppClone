@@ -1,7 +1,7 @@
 import type {IMessage} from "./Message.ts";
 
 export interface IChat {
-    id: string;
+    _id: string;
     name: string;
     participants: string[];
     type: 'private' | 'group';

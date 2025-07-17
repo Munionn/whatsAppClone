@@ -10,13 +10,13 @@ interface ChatListItemProps {
 }
 
 export const ChatListItem: React.FC<ChatListItemProps> = observer(({ chat }) => {
-    const isSelected = chat.id === chatStore.selectedChatId;
+    const isSelected = chat._id === chatStore.selectedChatId;
 
     return (
         <ListItem disablePadding>
             <ListItemButton
                 selected={isSelected}
-                onClick={() => chatStore.selectChat(chat.id)}
+                onClick={() => chatStore.selectChat(chat._id)}
                 sx={{ cursor: 'pointer' }}
             >
                 <ListItemAvatar>
