@@ -1,9 +1,11 @@
 export interface IMessage {
-    id: string;
+    _id: string;
     chatId: string;
     senderId: string;
-    text: string;
+    content: string;
     mediaUrl?: string;
-    createdAt: Date;
+    createdAt: string;
+    updatedAt?: string;
     isRead: boolean;
+    readBy?: string[];
 }

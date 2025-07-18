@@ -1,35 +1,37 @@
-import { makeAutoObservable, runInAction} from "mobx";
+import { makeAutoObservable, runInAction } from "mobx";
 import api from "../service/api.ts";
-import type {IChat} from "../models/Chat.ts";
-import type {IMessage} from "../models/Message.ts";
-
+import type { IChat } from "../models/Chat";
+import type { IMessage } from "../models/Message";
+import { authStore } from "./authStore";
 
 class ChatStore {
-    chats: Map<string, IChat> = new Map<string, IChat>();
+    chats: Map<string, IChat> = new Map();
     selectedChatId: string | null = null;
     messages: IMessage[] = [];
     isLoading: boolean = false;
     error: Error | null = null;
+
     constructor() {
         makeAutoObservable(this);
     }
 
+    // Fetch all chats for the current user
     fetchChats = async () => {
         this.isLoading = true;
         this.error = null;
 
         try {
-            const userJson = localStorage.getItem('user');
+            const userJson = localStorage.getItem("user");
             if (!userJson) {
-                throw new Error('User not found in localStorage');
+                throw new Error("User not found in localStorage");
             }
 
             const user = JSON.parse(userJson);
 
-            const response = await api.get('/main/chats', {
+            const response = await api.get("/main/chats", {
                 params: {
                     userId: user.id,
-                }
+                },
             });
 
             runInAction(() => {
@@ -39,7 +41,7 @@ class ChatStore {
             runInAction(() => {
                 this.error = err as Error;
             });
-            console.error('Failed to fetch chats:', err);
+            console.error("Failed to fetch chats:", err);
         } finally {
             runInAction(() => {
                 this.isLoading = false;
@@ -47,44 +49,80 @@ class ChatStore {
         }
     };
 
-    // message function
-    fetchMessages = async () => {
-        try{
-            const response = await api.get(`/messages/${this.selectedChatId}`)
-            this.messages = response.data as IMessage[];
-            return this.messages;
-        }
-        catch(err){
-            throw err as Error;
-        }
-    }
-
-    setMessages = async (data: IMessage[]) => {
-        this.messages = data;
-    }
-
-    addMessage(message: IMessage) {
-        runInAction(() => {
-            this.messages.push(message);
-        });
-    }
-
-    // -----------------------------------
+    // Set chats into the map
     setChats(chats: IChat[]) {
         chats.forEach((chat: IChat) => {
-            const chatId =  chat._id;
+            const chatId = chat._id;
             if (!chatId) {
-                console.error("Chat missing id or _id", chat);
+                console.error("Chat missing _id", chat);
                 return;
             }
             this.chats.set(chatId, chat);
         });
     }
 
-    addChat(chat: IChat) {
-        this.chats.set(chat._id, chat);
+    // Select a chat
+    selectChat(chatId: string) {
+        runInAction(() => {
+            this.selectedChatId = chatId;
+        });
     }
 
+    // Get selected chat
+    get selectedChat(): IChat | undefined {
+        return this.chats.get(this.selectedChatId || "");
+    }
+
+    // Get list of chats as array
+    get chatList(): IChat[] {
+        return Array.from(this.chats.values());
+    }
+
+    // Fetch messages for selected chat
+    fetchMessages = async (): Promise<IMessage[]> => {
+        if (!this.selectedChatId) {
+            console.warn("No chat selected to fetch messages");
+            return [];
+        }
+
+        try {
+            const response = await api.get(`/main/messages/${this.selectedChatId}`);
+            const fetchedMessages = response.data || [];
+
+            runInAction(() => {
+                this.messages = fetchedMessages as IMessage[];
+            });
+
+            return fetchedMessages as IMessage[];
+        } catch (err) {
+            console.error("Failed to fetch messages:", err);
+            runInAction(() => {
+                this.messages = [];
+            });
+            return [];
+        }
+    }
+
+    // Add a new message to store
+    addMessage(message: IMessage) {
+        runInAction(() => {
+            this.messages.push(message);
+        });
+    }
+
+    // Reset messages when chat changes
+    resetMessages() {
+        runInAction(() => {
+            this.messages = [];
+        });
+    }
+
+    // Utility: Get messages for selected chat
+    get messageList(): IMessage[] {
+        return this.messages;
+    }
+
+    // Update lastMessage for chat
     updateLastMessage(chatId: string, message: IMessage) {
         const chat = this.chats.get(chatId);
         if (chat) {
@@ -93,14 +131,16 @@ class ChatStore {
         }
     }
 
+    // Increase unread count
     increaseUnreadMessage(chatId: string) {
         const chat = this.chats.get(chatId);
         if (chat) {
-            chat.unread ++;
+            chat.unread = (chat.unread || 0) + 1;
             this.chats.set(chatId, chat);
         }
     }
 
+    // Reset unread count
     resetUnreadMessage(chatId: string) {
         const chat = this.chats.get(chatId);
         if (chat) {
@@ -108,26 +148,7 @@ class ChatStore {
             this.chats.set(chatId, chat);
         }
     }
-
-    selectChat(chatId: string) {
-        this.selectedChatId = chatId;
-    }
-
-    get selectedChat(): IChat | undefined {
-        if (!this.selectedChatId) return undefined;
-        return this.chats.get(this.selectedChatId);
-    }
-
-    get chatList(): IChat[] {
-        return Array.from(this.chats.values());
-    }
-
-    removeChat(chat: IChat) {
-        this.chats.delete(chat._id);
-    }
-
 }
 
 const chatStore = new ChatStore();
-
 export default chatStore;

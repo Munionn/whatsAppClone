@@ -5,59 +5,38 @@ const MessageSchema = new Schema<IMessage>(
     {
         chatId: {
             type: Schema.Types.ObjectId,
-            ref: 'Chat',
+            ref: "Chat",
             required: true
         },
         senderId: {
             type: Schema.Types.ObjectId,
-            ref: 'User',
+            ref: "User",
             required: true
         },
         content: {
             type: String,
-            required: true,
-            trim: true
+            required: true
         },
         type: {
             type: String,
             enum: ['text', 'image', 'file', 'audio', 'video'],
-            required: true,
             default: 'text'
         },
         isRead: {
             type: Boolean,
-            required: true,
             default: false
         },
         readBy: [{
             type: Schema.Types.ObjectId,
-            ref: 'User'
+            ref: "User"
         }],
-        replyTo: {
-            type: Schema.Types.ObjectId,
-            ref: 'Message'
+        createdAt: {
+            type: Date,
+            default: Date.now
         },
-        editedAt: {
-            type: Date
-        },
-        metadata: {
-            fileSize: Number,
-            fileName: String,
-            duration: Number, // For audio/video
-            thumbnail: String, // For images/video
-            width: Number, // For images/video
-            height: Number // For images/video
-        }
-    },
-    {
-        timestamps: true, // Automatically adds createdAt and updatedAt
-        toJSON: {
-            virtuals: true,
-            versionKey: false,
-            transform: (doc, ret) => {
-                ret.id = ret._id;
-                delete ret._id;
-            }
+        updatedAt: {
+            type: Date,
+            default: Date.now
         }
     }
 );
