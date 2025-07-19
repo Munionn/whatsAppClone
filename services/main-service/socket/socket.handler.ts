@@ -73,6 +73,7 @@ export const connectSocketHandler = (io: Server) => {
 
                 // Broadcast to all in the chat room (including sender)
                 io.to(message.chatId).emit("new-message", savedMessage);
+                //socket.broadcast.to(chatId).emit("new-message", savedMessage);
 
                 // Send acknowledgment to sender
                 if (callback) callback({ success: true, message: savedMessage });

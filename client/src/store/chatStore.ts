@@ -2,7 +2,7 @@ import { makeAutoObservable, runInAction } from "mobx";
 import api from "../service/api.ts";
 import type { IChat } from "../models/Chat";
 import type { IMessage } from "../models/Message";
-import { authStore } from "./authStore";
+// import { authStore } from "./authStore";
 
 class ChatStore {
     chats: Map<string, IChat> = new Map();

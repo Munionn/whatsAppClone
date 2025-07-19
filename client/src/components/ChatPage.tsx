@@ -25,47 +25,81 @@ const ChatPage: React.FC = observer(() => {
   useEffect(() => {
     if (!selectedChat || !authStore.user) return;
 
-    // Initialize socket connection
     const socket = io(SOCKET_URL, {
       auth: {
         userId: authStore.user.id,
         chatId: selectedChat._id
       },
-      withCredentials: true,
-      transports: ["websocket"]
+      transports: ["websocket"],
+      query: {
+        chatId: selectedChat._id,
+        userId: authStore.user.id
+      }
     });
 
     socketRef.current = socket;
 
     // Connection events
-    socket.on("connect", () => {
-      console.log("Socket connected");
+    const handleConnect = () => {
+      console.log("Socket connected to chat:", selectedChat._id);
       setIsConnected(true);
-      socket.emit("join-chat", selectedChat._id);
-    });
+
+      // Join the room for this specific chat
+      socket.emit("join-room", selectedChat._id);
+      console.log("Joined room:", selectedChat._id);
+    };
+
+    socket.on("connect", handleConnect);
 
     socket.on("disconnect", () => {
-      console.log("Socket disconnected");
+      console.log("Socket disconnected from chat:", selectedChat._id);
       setIsConnected(false);
     });
 
     socket.on("connect_error", (err) => {
-      console.error("Connection error:", err);
+      console.error("Connection error:", err.message);
     });
 
-    // Message events
+    // Message handling with detailed logging
     socket.on("new-message", (msg: IMessage) => {
-      if (msg.chatId === selectedChat._id) {
-        setMessages(prev => [...prev, msg]);
-        chatStore.addMessage(msg);
+      console.log("New message received for chat:", selectedChat._id, msg);
+      if (msg.senderId === authStore.user?.id) return; // ✅ Ignore own messages
+
+      if (msg.chatId !== selectedChat._id) {
+        console.log("Message ignored - different chat:", msg.chatId, "vs", selectedChat._id);
+        return;
       }
+
+      setMessages(prev => {
+        // Check if message already exists
+        const exists = prev.some(existingMsg => existingMsg._id === msg._id);
+        if (exists) {
+          console.log("Message already exists, skipping:", msg._id);
+          return prev;
+        }
+
+        console.log("Adding new message to UI:", msg._id);
+        return [...prev, msg];
+      });
+    });
+
+    // Room join confirmation
+    socket.on("joined-room", (roomId) => {
+      console.log("Confirmed joined room:", roomId);
+    });
+
+    // Debug all socket events
+    socket.onAny((event, ...args) => {
+      console.log(`Socket event: ${event}`, args);
     });
 
     // Load initial messages
     const loadMessages = async () => {
       try {
-        const fetchedMessages = await chatStore.fetchMessages(selectedChat._id);
+        console.log("Loading messages for chat:", selectedChat._id);
+        const fetchedMessages = await chatStore.fetchMessages();
         setMessages(fetchedMessages);
+        console.log("Loaded messages:", fetchedMessages.length);
       } catch (error) {
         console.error("Failed to load messages:", error);
       }
@@ -73,10 +107,18 @@ const ChatPage: React.FC = observer(() => {
 
     loadMessages();
 
-    // Cleanup
+
     return () => {
-      socket.emit("leave-chat", selectedChat._id);
-      socket.disconnect();
+      console.log("Cleaning up socket connection for chat:", selectedChat._id);
+
+      if (socketRef.current?.connected) {
+        // Leave the current room before disconnecting
+        socketRef.current.emit("leave-room", selectedChat._id);
+        console.log("Left room:", selectedChat._id);
+
+        // Disconnect the socket
+        socketRef.current.disconnect();
+      }
       socketRef.current = null;
     };
   }, [selectedChat?._id, authStore.user?.id]);

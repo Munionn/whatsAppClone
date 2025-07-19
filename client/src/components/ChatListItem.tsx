@@ -30,7 +30,7 @@ export const ChatListItem: React.FC<ChatListItemProps> = observer(({ chat }) => 
                     }
                     secondary={
                         <Typography variant="body2" color="textSecondary">
-                            {chat.lastMessage?.text || 'No messages yet'}
+                            {chat.lastMessage?.content || 'No messages yet'}
                         </Typography>
                     }
                 />
