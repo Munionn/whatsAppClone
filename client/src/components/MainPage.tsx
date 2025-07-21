@@ -4,19 +4,29 @@ import {Sidebar} from "./Sidebar.tsx";
 import ChatPage from "./ChatPage.tsx";
 import chatStore from "../store/chatStore.ts";
 
+const drawerWidth = 300;
 
 export function MainPage() {
     return (
         <Box sx={{ display: 'flex', height: '100vh' }}>
-            <Sidebar />
-            <ChatPage/>
-            {/*{chatStore.selectedChatId && <ChatPage/>}*/}
-            {/*<ChatWindow />*/}
-            {/*<ContactInfoPanel />*/}
-            {/*<NewChatModal />*/}
-            {/*<MediaPreviewModal />*/}
-            {/*<SettingsPanel />*/}
-            {/*<NotificationToast />*/}
+            <Drawer
+                variant="permanent"
+                sx={{
+                    width: drawerWidth,
+                    flexShrink: 0,
+                    '& .MuiDrawer-paper': {
+                        width: drawerWidth,
+                        boxSizing: 'border-box',
+                    },
+                }}
+            >
+                <Sidebar />
+            </Drawer>
+
+            <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                <ChatPage />
+            </Box>
         </Box>
     );
+
 }
