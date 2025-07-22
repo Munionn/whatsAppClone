@@ -205,7 +205,7 @@ class ChatController {
     }
 
     /**
-     * @route PATCH /api/chats/update
+     * @route PATCH /main/chats/update
      * @desc Update chat information (including last activity date)
      * @access Private
      * @body { chatId: string, updates: Partial<IChat> }

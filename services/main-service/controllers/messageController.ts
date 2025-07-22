@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { Types } from 'mongoose';
 import MessageService from "../services/message.service";
-import { IMessage } from '../types/types';
+import {IChat, IMessage} from '../types/types';
+import Chat from "../models/Chat";
 
 class MessageController {
     // Helper method to handle errors
@@ -40,6 +41,24 @@ class MessageController {
             };
 
             const newMessage = await MessageService.createMessage(messageData);
+
+            const upda =  await Chat.findByIdAndUpdate(
+                { _id: chatId },
+                {
+                    $set:{
+                        lastMessage: messageData._id
+
+                    }
+                },
+                { new: false}
+            );
+            // const io = req.app.get('io');
+            // const updatedChat: IChat = await Chat.findById({_id: chatId}).populate("lastMessage").lean();
+            // if (updatedChat) {
+            //     updatedChat.participants.forEach((participant) => {
+            //         io.to(`user:${ participant._id }`).emit("chat-update", updatedChat);
+            //     })
+            // }
             return res.status(201).json(newMessage);
         } catch (error) {
             return this.handleError(error, res);

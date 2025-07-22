@@ -38,8 +38,8 @@ export interface IMessage extends BaseDocument {
 export interface IChat extends BaseDocument {
   name: string;
   type: 'private' | 'group';
-  participants: Types.ObjectId[]; // Reference to User documents
-  lastMessage?: Types.ObjectId; // Reference to Message document
+  participants: Types.ObjectId[];
+  lastMessage?: Types.ObjectId;
   unreadCounts?: Record<string, number>; // Map of userId to unread count
   admins?: Types.ObjectId[]; // Reference to User documents
   avatar?: string;

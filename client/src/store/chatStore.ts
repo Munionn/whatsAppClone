@@ -148,6 +148,17 @@ class ChatStore {
             this.chats.set(chatId, chat);
         }
     }
+    updateChatInList(updatedChat: IChat) {
+        runInAction(() => {
+            const index = this.chatList.findIndex(c => c._id === updatedChat._id);
+            if (index !== -1) {
+                this.chatList[index] = updatedChat;
+            } else {
+                // If chat is new (e.g., new group), add it
+                this.chatList.unshift(updatedChat);
+            }
+        });
+    }
 }
 
 const chatStore = new ChatStore();

@@ -11,7 +11,6 @@ import {
   Paper,
   List,
   ListItem,
-  ListItemText,
   TextField,
   Button,
   Typography,
@@ -73,6 +72,7 @@ const FixedInputContainer = styled(Box)({
   alignItems: 'flex-end',
   boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.1)',
   zIndex: 5,
+
 });
 
 // Enhanced message bubble with better styling
@@ -110,14 +110,14 @@ const MessageBubble = styled(Paper)<{ isSender: boolean }>(({ isSender, theme })
 }));
 
 // Status indicator with animation
-const StatusIndicator = styled(Box)(({ connected }: { connected: boolean }) => ({
+const StatusIndicator = styled(Box)<{ $connected: boolean }>(({ $connected }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: '8px',
   padding: '6px 12px',
   borderRadius: '20px',
-  backgroundColor: connected ? 'rgba(76, 175, 80, 0.1)' : 'rgba(244, 67, 54, 0.1)',
-  color: connected ? '#4CAF50' : '#F44336',
+  backgroundColor: $connected ? 'rgba(76, 175, 80, 0.1)' : 'rgba(244, 67, 54, 0.1)',
+  color: $connected ? '#4CAF50' : '#F44336',
   fontSize: '0.8rem',
   fontWeight: 600,
   '&::before': {
@@ -125,23 +125,25 @@ const StatusIndicator = styled(Box)(({ connected }: { connected: boolean }) => (
     width: '8px',
     height: '8px',
     borderRadius: '50%',
-    backgroundColor: connected ? '#4CAF50' : '#F44336',
-    animation: connected ? 'pulse 2s infinite' : 'none',
+    backgroundColor: $connected ? '#4CAF50' : '#F44336',
+    animation: $connected ? 'pulse 2s infinite' : 'none'
   },
   '@keyframes pulse': {
     '0%': { opacity: 1 },
     '50%': { opacity: 0.5 },
-    '100%': { opacity: 1 },
-  },
+    '100%': { opacity: 1 }
+  }
 }));
 
 // Custom input field
 const StyledTextField = styled(TextField)({
   '& .MuiOutlinedInput-root': {
-    borderRadius: '24px',
+    padding: '0',
+    borderRadius: '12px',
     backgroundColor: '#F8F8F8',
     '& fieldset': {
       border: '1px solid rgba(0, 0, 0, 0.1)',
+      minHeight: '50px',
     },
     '&:hover fieldset': {
       border: '1px solid rgba(0, 0, 0, 0.2)',
@@ -151,7 +153,10 @@ const StyledTextField = styled(TextField)({
     },
   },
   '& .MuiOutlinedInput-input': {
-    padding: '12px 16px',
+    padding: '12px 12px',
+    fontSize: '14px',
+    height: '16px',
+    lineHeight: '16px',
   },
 });
 
@@ -184,21 +189,21 @@ const ScrollToBottomButton = styled(IconButton)(({ theme }) => ({
 }));
 
 // Send button with animation
-const SendButton = styled(IconButton)(({ disabled }) => ({
-  backgroundColor: disabled ? '#E0E0E0' : '#007AFF',
-  color: disabled ? '#9E9E9E' : 'white',
-  width: '48px',
-  height: '48px',
-  borderRadius: '50%',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    backgroundColor: disabled ? '#E0E0E0' : '#0056CC',
-    transform: disabled ? 'none' : 'scale(1.05)',
-  },
-  '&:active': {
-    transform: disabled ? 'none' : 'scale(0.95)',
-  },
-}));
+// const SendButton = styled(IconButton)(({ disabled }) => ({
+//   backgroundColor: disabled ? '#E0E0E0' : '#007AFF',
+//   color: disabled ? '#9E9E9E' : 'white',
+//   width: '48px',
+//   height: '48px',
+//   borderRadius: '50%',
+//   transition: 'all 0.3s ease',
+//   '&:hover': {
+//     backgroundColor: disabled ? '#E0E0E0' : '#0056CC',
+//     transform: disabled ? 'none' : 'scale(1.05)',
+//   },
+//   '&:active': {
+//     transform: disabled ? 'none' : 'scale(0.95)',
+//   },
+// }));
 
 const ChatPage: React.FC = observer(() => {
   const [input, setInput] = useState("");
@@ -359,7 +364,7 @@ const ChatPage: React.FC = observer(() => {
               <Typography variant="h6" fontWeight="600">
                 {selectedChat.name}
               </Typography>
-              <StatusIndicator connected={isConnected}>
+              <StatusIndicator $connected={isConnected}>
                 {isConnected ? "Online" : "Offline"}
               </StatusIndicator>
             </Box>
@@ -440,7 +445,7 @@ const ChatPage: React.FC = observer(() => {
         </MessagesArea>
         {/* Fixed Bottom Input */}
         <FixedInputContainer>
-          <Box component="form" onSubmit={sendMessage} sx={{ display: 'flex', gap: 2, width: '100%', alignItems: 'flex-end' }}>
+          <Box component="form" onSubmit={sendMessage} sx={{ display: 'flex', gap: 2, width: '100%', alignItems: 'flex-end'}}>
             <StyledTextField
                 fullWidth
                 multiline
@@ -456,13 +461,20 @@ const ChatPage: React.FC = observer(() => {
                   }
                 }}
             />
-            <SendButton
+            <Button
                 type="submit"
                 disabled={!input.trim()}
+                sx={{
+                  backgroundColor: '#007AFF',
+                  color: 'white',
+                  px: 2,
+                  py: 1,
+                  borderRadius: '24px',
+                  '&:hover': { backgroundColor: '#0056CC' }
+                }}
             >
-              {/*<Send />*/}
-              <Button>send</Button>
-            </SendButton>
+              Send
+            </Button>
           </Box>
         </FixedInputContainer>
         <Fade in={showScrollTop} timeout={300}>

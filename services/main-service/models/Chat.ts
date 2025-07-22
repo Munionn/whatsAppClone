@@ -8,7 +8,7 @@ const ChatSchema = new Schema<IChat>(
         participants: [
             { type: Schema.Types.ObjectId, ref: "User", required: true }
         ],
-        lastMessage: { type: Schema.Types.ObjectId, ref: "Message", default: null },
+        lastMessage: { type: String, default: null },
         unreadCounts: { type: Number, default: 0 },
     },
     { timestamps: true }
