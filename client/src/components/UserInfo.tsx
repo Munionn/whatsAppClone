@@ -1,7 +1,8 @@
 import {observer} from "mobx-react-lite";
 import {authStore} from "../store/authStore";
 import {useNavigate} from "react-router-dom";
-
+import Button from "@mui/material/Button";
+import LogoutIcon from '@mui/icons-material/Logout';
 const UserInfo = observer(() => {
     const navigate = useNavigate();
     if (!authStore.isAuth || !authStore.user) {
@@ -16,11 +17,10 @@ const UserInfo = observer(() => {
     return (
         <div>
             <h2>User Info</h2>
-            <p><b>ID:</b> {authStore.user.id}</p>
             <p><b>Name:</b> {authStore.user.name}</p>
             <p><b>Phone:</b> {authStore.user.phone}</p>
-            <p><b>Status:</b> {authStore.user.status}</p>
-            <button onClick={onLogout}>Log out</button>
+            {/*<p><b>Status:</b> {authStore.user.status}</p>*/}
+            <Button onClick={onLogout}><LogoutIcon/>Log out</Button>
         </div>
     );
 });

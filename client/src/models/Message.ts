@@ -8,4 +8,5 @@ export interface IMessage {
     updatedAt?: string;
     isRead: boolean;
     readBy?: string[];
+    formattedTime?: string;
 }

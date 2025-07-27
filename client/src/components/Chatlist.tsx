@@ -3,16 +3,21 @@ import {observer} from 'mobx-react-lite';
 import {List, ListItem, ListItemAvatar, Avatar, ListItemText, Typography, Box} from '@mui/material';
 import {ChatListItem} from "./ChatListItem.tsx";
 import chatStore from '../store/chatStore';
-import {io} from "socket.io-client";
 import {authStore} from "../store/authStore.ts";
 
-export const ChatList = observer(() => {
+interface ChatListProps {
+    searchQuery: string;
+}
+
+export const ChatList = observer(({searchQuery} : ChatListProps) => {
     useEffect(() => {
         chatStore.fetchChats();
 
     }, []);
 
-    const chats = chatStore.chatList;
+    const chats = chatStore.chatList.filter((chat) =>
+        chat.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
         <Box sx={{width: '100%', maxWidth: 360, bgcolor: 'background.paper'}}>

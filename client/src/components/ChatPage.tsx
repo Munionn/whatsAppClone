@@ -4,6 +4,7 @@ import { io, Socket } from "socket.io-client";
 import chatStore from "../store/chatStore";
 import type { IMessage } from "../models/Message";
 import { authStore } from "../store/authStore";
+import SendIcon from '@mui/icons-material/Send';
 
 // Material UI imports
 import {
@@ -19,6 +20,7 @@ import {
   Fade, Tooltip
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import {MemoizedMessageItem} from "./MemorizedMessageIteam.tsx";
 
 const SOCKET_URL = "http://localhost:3000";
 
@@ -76,38 +78,38 @@ const FixedInputContainer = styled(Box)({
 });
 
 // Enhanced message bubble with better styling
-const MessageBubble = styled(Paper)<{ isSender: boolean }>(({ isSender, theme }) => ({
-  padding: '12px 16px',
-  margin: '4px 0',
-  backgroundColor: isSender ? '#007AFF' : '#F1F1F1',
-  color: isSender ? 'white' : '#000',
-  alignSelf: isSender ? 'flex-end' : 'flex-start',
-  maxWidth: '75%',
-  borderRadius: isSender ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
-  boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)',
-  wordBreak: 'break-word',
-  position: 'relative',
-  '&::before': isSender ? {} : {
-    content: '""',
-    position: 'absolute',
-    left: -6,
-    bottom: 0,
-    width: 0,
-    height: 0,
-    border: '6px solid transparent',
-    borderRightColor: '#F1F1F1',
-  },
-  '&::after': isSender ? {
-    content: '""',
-    position: 'absolute',
-    right: -6,
-    bottom: 0,
-    width: 0,
-    height: 0,
-    border: '6px solid transparent',
-    borderLeftColor: '#007AFF',
-  } : {},
-}));
+// const MessageBubble = styled(Paper)<{ isSender: boolean }>(({ isSender, theme }) => ({
+//   padding: '12px 16px',
+//   margin: '4px 0',
+//   backgroundColor: isSender ? '#007AFF' : '#F1F1F1',
+//   color: isSender ? 'white' : '#000',
+//   alignSelf: isSender ? 'flex-end' : 'flex-start',
+//   maxWidth: '75%',
+//   borderRadius: isSender ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
+//   boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)',
+//   wordBreak: 'break-word',
+//   position: 'relative',
+//   '&::before': isSender ? {} : {
+//     content: '""',
+//     position: 'absolute',
+//     left: -6,
+//     bottom: 0,
+//     width: 0,
+//     height: 0,
+//     border: '6px solid transparent',
+//     borderRightColor: '#F1F1F1',
+//   },
+//   '&::after': isSender ? {
+//     content: '""',
+//     position: 'absolute',
+//     right: -6,
+//     bottom: 0,
+//     width: 0,
+//     height: 0,
+//     border: '6px solid transparent',
+//     borderLeftColor: '#007AFF',
+//   } : {},
+// }));
 
 // Status indicator with animation
 const StatusIndicator = styled(Box)<{ $connected: boolean }>(({ $connected }) => ({
@@ -264,10 +266,20 @@ const ChatPage: React.FC = observer(() => {
 
       if (msg.chatId !== selectedChat._id) return;
 
+
+      const formattedMsg = {
+        ...msg,
+        formattedTime: new Date(msg.createdAt).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        timestamp: new Date(msg.createdAt).getTime()
+      };
+
       setMessages(prev => {
         const exists = prev.some(existingMsg => existingMsg._id === msg._id);
         if (exists) return prev;
-        return [...prev, msg];
+        return [...prev, formattedMsg];
       });
     });
 
@@ -407,33 +419,7 @@ const ChatPage: React.FC = observer(() => {
                             </Typography>
                           </Box>
                       )}
-                      <ListItem
-                          disableGutters
-                          sx={{
-                            justifyContent: isSender ? 'flex-end' : 'flex-start',
-                            mb: 1
-                          }}
-                      >
-                        <MessageBubble isSender={isSender}>
-                          <Typography variant="body1" sx={{ lineHeight: 1.4 }}>
-                            {msg.content}
-                          </Typography>
-                          <Typography
-                              variant="caption"
-                              sx={{
-                                display: 'block',
-                                textAlign: 'right',
-                                mt: 0.5,
-                                opacity: 0.7
-                              }}
-                          >
-                            {new Date(msg.createdAt).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </Typography>
-                        </MessageBubble>
-                      </ListItem>
+                      <MemoizedMessageItem msg={msg} />
                     </React.Fragment>
                 );
               })}
@@ -473,7 +459,7 @@ const ChatPage: React.FC = observer(() => {
                   '&:hover': { backgroundColor: '#0056CC' }
                 }}
             >
-              Send
+              <SendIcon/>
             </Button>
           </Box>
         </FixedInputContainer>
